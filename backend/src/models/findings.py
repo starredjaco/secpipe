@@ -14,7 +14,7 @@ Models for workflow findings and submissions
 # Additional attribution and requirements are provided in the NOTICE file.
 
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional, Literal, List
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 
