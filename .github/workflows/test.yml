@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, master, develop, feature/** ]
+    branches: [ main, master, dev, develop, feature/** ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, dev, develop ]
 
 jobs:
   validate-workers:
