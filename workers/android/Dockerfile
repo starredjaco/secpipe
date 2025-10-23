@@ -107,20 +107,26 @@ COPY worker.py /app/worker.py
 
 # Create startup script that runs MobSF in background and then starts worker
 RUN echo '#!/bin/bash\n\
-# Start MobSF server in background\n\
+# Start MobSF server in background with sync workers (avoid Rosetta syscall issues)\n\
 echo "Starting MobSF server in background..."\n\
-cd /app/mobsf && ./run.sh 127.0.0.1:8877 > /tmp/mobsf.log 2>&1 &\n\
+cd /app/mobsf && python3 -m poetry run gunicorn -b 127.0.0.1:8877 \\\n\
+    mobsf.MobSF.wsgi:application \\\n\
+    --worker-class=sync \\\n\
+    --workers=2 \\\n\
+    --timeout=3600 \\\n\
+    --log-level=error \\\n\
+    > /tmp/mobsf.log 2>&1 &\n\
 MOBSF_PID=$!\n\
 echo "MobSF started with PID: $MOBSF_PID"\n\
 \n\
-# Wait a moment for MobSF to initialize\n\
-sleep 5\n\
+# Wait for MobSF to initialize\n\
+sleep 10\n\
 \n\
 # Generate and store MobSF API key\n\
 if [ -f /root/.MobSF/secret ]; then\n\
     SECRET=$(cat /root/.MobSF/secret)\n\
-    export MOBSF_API_KEY=$(echo -n "$SECRET" | sha256sum | cut -d\" \" -f1)\n\
-    echo "MobSF API key generated and exported"\n\
+    export MOBSF_API_KEY=$(echo -n "$SECRET" | sha256sum | cut -d " " -f1)\n\
+    echo "MobSF API key: $MOBSF_API_KEY"\n\
 fi\n\
 \n\
 # Start worker\n\

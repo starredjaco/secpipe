@@ -119,17 +119,16 @@ class AndroidStaticAnalysisWorkflow:
 
         # Phase 0: Download target from MinIO
         workflow.logger.info(f"Phase 0: Downloading target from MinIO (target_id={target_id})")
-        download_result = await workflow.execute_activity(
-            "download_target",
-            args=[target_id],
+        workspace_path = await workflow.execute_activity(
+            "get_target",
+            args=[target_id, workflow.info().workflow_id, "shared"],
             start_to_close_timeout=timedelta(minutes=10),
             retry_policy=retry_policy,
         )
-        workspace_path = download_result["workspace_path"]
         workflow.logger.info(f"✓ Target downloaded to: {workspace_path}")
 
-        # Determine APK path
-        actual_apk_path = apk_path if apk_path else download_result.get("primary_file", "app.apk")
+        # Determine APK path (default to first .apk file if not specified)
+        actual_apk_path = apk_path if apk_path else None
 
         # Phase 1: Jadx decompilation (if enabled and APK provided)
         jadx_result = None
@@ -219,21 +218,21 @@ class AndroidStaticAnalysisWorkflow:
         # Phase 5: Upload results to MinIO
         workflow.logger.info("Phase 5: Uploading results to MinIO")
 
-        upload_result = await workflow.execute_activity(
+        result_url = await workflow.execute_activity(
             "upload_results",
-            args=[target_id, sarif_report],
+            args=[workflow.info().workflow_id, sarif_report, "sarif"],
             start_to_close_timeout=timedelta(minutes=10),
             retry_policy=retry_policy,
         )
 
-        workflow.logger.info(f"✓ Results uploaded: {upload_result.get('result_url')}")
+        workflow.logger.info(f"✓ Results uploaded: {result_url}")
 
         # Phase 6: Cleanup cache
         workflow.logger.info("Phase 6: Cleaning up cache")
 
         await workflow.execute_activity(
             "cleanup_cache",
-            args=[target_id],
+            args=[workspace_path, "shared"],
             start_to_close_timeout=timedelta(minutes=5),
             retry_policy=RetryPolicy(maximum_attempts=1),  # Don't retry cleanup
         )
@@ -248,7 +247,7 @@ class AndroidStaticAnalysisWorkflow:
             "decompiled_java_files": (jadx_result or {}).get("summary", {}).get("java_files", 0) if jadx_result else 0,
             "opengrep_findings": opengrep_result.get("summary", {}).get("total_findings", 0),
             "mobsf_findings": mobsf_result.get("summary", {}).get("total_findings", 0) if mobsf_result else 0,
-            "result_url": upload_result.get("result_url"),
+            "result_url": result_url,
         }
 
         workflow.logger.info(
