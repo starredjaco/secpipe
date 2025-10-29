@@ -507,7 +507,7 @@ pytest -m integration  # Only integration tests
 
 - [Docker Setup](../how-to/docker-setup.md) - Worker management
 - [CLI Reference](../reference/cli-reference.md) - CLI commands
-- [Workflow Guide](../how-to/workflows.md) - Creating workflows
+- [Workflow Guide](../how-to/create-workflow.md) - Creating workflows
 
 ---
 
