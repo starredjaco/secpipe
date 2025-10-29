@@ -1,5 +1,13 @@
 name: Tests
 
+# This workflow covers:
+# - Worker validation (Dockerfile and metadata checks)
+# - Docker image builds (only for modified workers)
+# - Python linting (ruff, mypy)
+# - Backend unit tests
+#
+# For end-to-end workflow integration tests, see: .github/workflows/test-workflows.yml
+
 on:
   push:
     branches: [ main, master, dev, develop, feature/** ]

@@ -1,0 +1,178 @@
+# Test Matrix Configuration for Automated Workflow Testing
+#
+# This file defines which workflows to test, their required workers,
+# test projects, parameters, and expected outcomes.
+#
+# Excluded workflows:
+# - llm_analysis (requires LLM API keys)
+# - llm_secret_detection (requires LLM API keys)
+# - ossfuzz_campaign (requires OSS-Fuzz project configuration)
+
+version: "1.0"
+
+# Worker to Dockerfile mapping
+workers:
+  android:
+    dockerfiles:
+      linux/amd64: "Dockerfile.amd64"
+      linux/arm64: "Dockerfile.arm64"
+    metadata: "workers/android/metadata.yaml"
+
+  python:
+    dockerfiles:
+      default: "Dockerfile"
+
+  rust:
+    dockerfiles:
+      default: "Dockerfile"
+
+  secrets:
+    dockerfiles:
+      default: "Dockerfile"
+
+# Workflow test configurations
+workflows:
+  # Android Static Analysis
+  android_static_analysis:
+    worker: android
+    test_project: test_projects/android_test
+    working_directory: test_projects/android_test
+    parameters:
+      apk_path: "BeetleBug.apk"
+    timeout: 300
+    platform_specific: true  # Test on both amd64 and arm64
+    expected:
+      status: "COMPLETED"
+      has_findings: true
+      sarif_export: true
+    tags: [android, static-analysis, fast]
+
+  # Python SAST
+  python_sast:
+    worker: python
+    test_project: test_projects/vulnerable_app
+    working_directory: test_projects/vulnerable_app
+    parameters: {}
+    timeout: 180
+    expected:
+      status: "COMPLETED"
+      has_findings: true
+      sarif_export: true
+    tags: [python, sast, fast]
+
+  # Python Fuzzing (Atheris)
+  atheris_fuzzing:
+    worker: python
+    test_project: test_projects/python_fuzz_waterfall
+    working_directory: test_projects/python_fuzz_waterfall
+    parameters:
+      max_total_time: 30  # Short fuzzing run for testing
+      artifact_prefix: "test-atheris"
+    timeout: 120
+    expected:
+      status: "COMPLETED"
+      has_findings: false  # May not find crashes in short run
+      sarif_export: false
+    tags: [python, fuzzing, slow]
+
+  # Rust Fuzzing (cargo-fuzz)
+  cargo_fuzzing:
+    worker: rust
+    test_project: test_projects/rust_fuzz_test
+    working_directory: test_projects/rust_fuzz_test
+    parameters:
+      max_total_time: 30  # Short fuzzing run for testing
+      artifact_prefix: "test-cargo"
+    timeout: 120
+    expected:
+      status: "COMPLETED"
+      has_findings: false  # May not find crashes in short run
+      sarif_export: false
+    tags: [rust, fuzzing, slow]
+
+  # Secret Detection (combined)
+  secret_detection:
+    worker: secrets
+    test_project: test_projects/secret_detection_benchmark
+    working_directory: test_projects/secret_detection_benchmark
+    parameters: {}
+    timeout: 120
+    expected:
+      status: "COMPLETED"
+      has_findings: true
+      sarif_export: true
+    tags: [secrets, detection, fast]
+
+  # Gitleaks Detection
+  gitleaks_detection:
+    worker: secrets
+    test_project: test_projects/secret_detection_benchmark
+    working_directory: test_projects/secret_detection_benchmark
+    parameters: {}
+    timeout: 120
+    expected:
+      status: "COMPLETED"
+      has_findings: true
+      sarif_export: true
+    tags: [secrets, gitleaks, fast]
+
+  # TruffleHog Detection
+  trufflehog_detection:
+    worker: secrets
+    test_project: test_projects/secret_detection_benchmark
+    working_directory: test_projects/secret_detection_benchmark
+    parameters: {}
+    timeout: 120
+    expected:
+      status: "COMPLETED"
+      has_findings: true
+      sarif_export: true
+    tags: [secrets, trufflehog, fast]
+
+  # Security Assessment (composite workflow)
+  security_assessment:
+    worker: python  # Uses multiple workers internally
+    test_project: test_projects/vulnerable_app
+    working_directory: test_projects/vulnerable_app
+    parameters: {}
+    timeout: 300
+    expected:
+      status: "COMPLETED"
+      has_findings: true
+      sarif_export: true
+    tags: [composite, security, slow]
+
+# Test suites - groups of workflows for different scenarios
+test_suites:
+  # Fast tests - run on every PR
+  fast:
+    workflows:
+      - android_static_analysis
+      - python_sast
+      - secret_detection
+      - gitleaks_detection
+      - trufflehog_detection
+    timeout: 900  # 15 minutes total
+
+  # Full tests - run on main/master
+  full:
+    workflows:
+      - android_static_analysis
+      - python_sast
+      - atheris_fuzzing
+      - cargo_fuzzing
+      - secret_detection
+      - gitleaks_detection
+      - trufflehog_detection
+      - security_assessment
+    timeout: 1800  # 30 minutes total
+
+  # Platform-specific tests - test Dockerfile selection
+  platform:
+    workflows:
+      - android_static_analysis
+      - python_sast
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    timeout: 600  # 10 minutes total

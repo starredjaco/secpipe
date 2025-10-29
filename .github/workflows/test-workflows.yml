@@ -1,0 +1,319 @@
+name: Workflow Integration Tests
+
+on:
+  push:
+    branches: [ main, master, dev, develop, test/** ]
+  pull_request:
+    branches: [ main, master, dev, develop ]
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'fast'
+        type: choice
+        options:
+          - fast
+          - full
+          - platform
+
+jobs:
+  #############################################################################
+  # Platform Detection Unit Tests
+  #############################################################################
+  platform-detection-tests:
+    name: Platform Detection Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        working-directory: ./cli
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pyyaml
+          pip install -e .
+
+      - name: Run platform detection tests
+        working-directory: ./cli
+        run: |
+          pytest tests/test_platform_detection.py -v \
+            --cov=src/fuzzforge_cli \
+            --cov-report=term \
+            --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./cli/coverage.xml
+          flags: cli-platform-detection
+          name: cli-platform-detection
+
+  #############################################################################
+  # Fast Workflow Tests (AMD64 only)
+  #############################################################################
+  fast-workflow-tests:
+    name: Fast Workflow Tests (AMD64)
+    runs-on: ubuntu-latest
+    needs: platform-detection-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FuzzForge CLI
+        working-directory: ./cli
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pyyaml  # Required by test script
+
+      - name: Copy environment template
+        run: |
+          mkdir -p volumes/env
+          cp volumes/env/.env.template volumes/env/.env
+
+      - name: Start FuzzForge services
+        run: |
+          docker compose up -d
+          echo "⏳ Waiting for services to be ready..."
+          sleep 30
+
+          # Wait for backend to be healthy
+          max_wait=60
+          waited=0
+          while [ $waited -lt $max_wait ]; do
+            if docker ps --filter "name=fuzzforge-backend" --format "{{.Status}}" | grep -q "healthy"; then
+              echo "✅ Backend is healthy"
+              break
+            fi
+            echo "Waiting for backend... ($waited/$max_wait seconds)"
+            sleep 5
+            waited=$((waited + 5))
+          done
+
+      - name: Run fast workflow tests
+        run: |
+          python scripts/test_workflows.py --suite fast --skip-service-start
+        timeout-minutes: 20
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker container status ==="
+          docker ps -a
+
+          echo "=== Backend logs ==="
+          docker logs fuzzforge-backend --tail 100
+
+          echo "=== Worker logs ==="
+          for worker in python secrets android; do
+            if docker ps -a --format "{{.Names}}" | grep -q "fuzzforge-worker-$worker"; then
+              echo "=== Worker: $worker ==="
+              docker logs fuzzforge-worker-$worker --tail 50
+            fi
+          done
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
+
+  #############################################################################
+  # Platform-Specific Tests (Android Worker)
+  #############################################################################
+  android-platform-tests:
+    name: Android Worker Platform Tests
+    runs-on: ${{ matrix.os }}
+    needs: platform-detection-tests
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+            arch: x86_64
+          # ARM64 runner (uncomment when GitHub Actions ARM64 runners are available)
+          # - os: ubuntu-24.04-arm
+          #   platform: linux/arm64
+          #   arch: aarch64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FuzzForge CLI
+        working-directory: ./cli
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pyyaml
+
+      - name: Verify platform detection
+        run: |
+          echo "Expected platform: ${{ matrix.platform }}"
+          echo "Expected arch: ${{ matrix.arch }}"
+          echo "Actual arch: $(uname -m)"
+
+          # Verify platform matches
+          if [ "$(uname -m)" != "${{ matrix.arch }}" ]; then
+            echo "❌ Platform mismatch!"
+            exit 1
+          fi
+
+      - name: Check Android worker Dockerfile selection
+        run: |
+          # Check which Dockerfile would be selected
+          if [ "${{ matrix.platform }}" == "linux/amd64" ]; then
+            expected_dockerfile="Dockerfile.amd64"
+          else
+            expected_dockerfile="Dockerfile.arm64"
+          fi
+
+          echo "Expected Dockerfile: $expected_dockerfile"
+
+          # Verify the Dockerfile exists
+          if [ ! -f "workers/android/$expected_dockerfile" ]; then
+            echo "❌ Dockerfile not found: workers/android/$expected_dockerfile"
+            exit 1
+          fi
+
+          echo "✅ Dockerfile exists: $expected_dockerfile"
+
+      - name: Build Android worker for platform
+        run: |
+          echo "Building Android worker for platform: ${{ matrix.platform }}"
+          docker compose build worker-android
+        timeout-minutes: 15
+
+      - name: Copy environment template
+        run: |
+          mkdir -p volumes/env
+          cp volumes/env/.env.template volumes/env/.env
+
+      - name: Start FuzzForge services
+        run: |
+          docker compose up -d
+          sleep 30
+
+      - name: Run Android workflow test
+        run: |
+          python scripts/test_workflows.py \
+            --workflow android_static_analysis \
+            --platform ${{ matrix.platform }} \
+            --skip-service-start
+        timeout-minutes: 10
+
+      - name: Verify correct Dockerfile was used
+        run: |
+          # Check docker image labels or inspect to verify correct build
+          docker inspect fuzzforge-worker-android | grep -i "dockerfile" || true
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Android worker logs ==="
+          docker logs fuzzforge-worker-android --tail 100
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
+
+  #############################################################################
+  # Full Workflow Tests (on schedule or manual trigger)
+  #############################################################################
+  full-workflow-tests:
+    name: Full Workflow Tests
+    runs-on: ubuntu-latest
+    needs: platform-detection-tests
+    # Only run full tests on schedule, manual trigger, or main branch
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FuzzForge CLI
+        working-directory: ./cli
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pyyaml
+
+      - name: Copy environment template
+        run: |
+          mkdir -p volumes/env
+          cp volumes/env/.env.template volumes/env/.env
+
+      - name: Start FuzzForge services
+        run: |
+          docker compose up -d
+          sleep 30
+
+      - name: Run full workflow tests
+        run: |
+          python scripts/test_workflows.py --suite full --skip-service-start
+        timeout-minutes: 45
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker container status ==="
+          docker ps -a
+
+          echo "=== All worker logs ==="
+          for worker in python secrets rust android ossfuzz; do
+            if docker ps -a --format "{{.Names}}" | grep -q "fuzzforge-worker-$worker"; then
+              echo "=== Worker: $worker ==="
+              docker logs fuzzforge-worker-$worker --tail 100
+            fi
+          done
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
+
+  #############################################################################
+  # Test Summary
+  #############################################################################
+  test-summary:
+    name: Workflow Test Summary
+    runs-on: ubuntu-latest
+    needs: [platform-detection-tests, fast-workflow-tests, android-platform-tests]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.platform-detection-tests.result }}" != "success" ]; then
+            echo "❌ Platform detection tests failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.fast-workflow-tests.result }}" != "success" ]; then
+            echo "❌ Fast workflow tests failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.android-platform-tests.result }}" != "success" ]; then
+            echo "❌ Android platform tests failed"
+            exit 1
+          fi
+
+          echo "✅ All workflow integration tests passed!"
