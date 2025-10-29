@@ -38,6 +38,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov pyyaml
+          # Install local monorepo dependencies first
+          pip install -e ../sdk
+          pip install -e ../ai
+          # Then install CLI
           pip install -e .
 
       - name: Run platform detection tests
@@ -75,8 +79,12 @@ jobs:
         working-directory: ./cli
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
           pip install pyyaml  # Required by test script
+          # Install local monorepo dependencies first
+          pip install -e ../sdk
+          pip install -e ../ai
+          # Then install CLI
+          pip install -e .
 
       - name: Copy environment template
         run: |
@@ -158,8 +166,12 @@ jobs:
         working-directory: ./cli
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
           pip install pyyaml
+          # Install local monorepo dependencies first
+          pip install -e ../sdk
+          pip install -e ../ai
+          # Then install CLI
+          pip install -e .
 
       - name: Verify platform detection
         run: |
@@ -253,8 +265,12 @@ jobs:
         working-directory: ./cli
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
           pip install pyyaml
+          # Install local monorepo dependencies first
+          pip install -e ../sdk
+          pip install -e ../ai
+          # Then install CLI
+          pip install -e .
 
       - name: Copy environment template
         run: |
