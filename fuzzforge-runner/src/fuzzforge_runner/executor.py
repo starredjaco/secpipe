@@ -100,24 +100,24 @@ class ModuleExecutor:
     def _get_engine(self) -> AbstractFuzzForgeSandboxEngine:
         """Get the container engine instance.
 
-        Uses PodmanCLI with custom storage paths by default for Podman,
-        providing isolation from system Podman configuration and avoiding
-        issues with VS Code snap's XDG_DATA_HOME override.
+        Uses DockerCLI by default for simplicity (works on Linux, macOS, Windows).
+        PodmanCLI is used when engine type is set to 'podman'.
 
         :returns: Configured container engine.
 
         """
+        from fuzzforge_common.sandboxes.engines.docker import DockerCLI
         from fuzzforge_common.sandboxes.engines.podman import PodmanCLI
 
-        # Use PodmanCLI with custom storage paths for Podman
+        # Use PodmanCLI for Podman (with custom storage under Snap)
         if self._engine_settings.type == "podman":
             return PodmanCLI(
                 graphroot=self._engine_settings.graphroot,
                 runroot=self._engine_settings.runroot,
             )
 
-        # Fall back to socket-based engine for Docker
-        return self._get_engine_configuration().into_engine()
+        # Use DockerCLI for Docker (default)
+        return DockerCLI()
 
     def _check_image_exists(self, module_identifier: str) -> bool:
         """Check if a module image exists locally.
@@ -128,12 +128,26 @@ class ModuleExecutor:
         """
         engine = self._get_engine()
 
-        # Try both common tags: latest and 0.0.1
-        tags_to_check = ["latest", "0.0.1"]
+        # Try common tags
+        tags_to_check = ["latest", "0.1.0", "0.0.1"]
 
-        # Try both naming conventions:
+        # Try multiple naming conventions:
+        # - fuzzforge-{name}:{tag} (OSS local builds)
+        # - fuzzforge-module-{name}:{tag} (OSS local builds with module prefix)
         # - localhost/fuzzforge-module-{name}:{tag} (standard convention)
         # - localhost/{name}:{tag} (legacy/short form)
+        
+        # For OSS local builds (no localhost/ prefix)
+        for tag in tags_to_check:
+            # Check direct module name (fuzzforge-cargo-fuzzer:0.1.0)
+            if engine.image_exists(f"{module_identifier}:{tag}"):
+                return True
+            # Check with fuzzforge- prefix if not already present
+            if not module_identifier.startswith("fuzzforge-"):
+                if engine.image_exists(f"fuzzforge-{module_identifier}:{tag}"):
+                    return True
+        
+        # For registry-style naming (localhost/ prefix)
         name_prefixes = [f"fuzzforge-module-{module_identifier}", module_identifier]
 
         for prefix in name_prefixes:
@@ -148,17 +162,40 @@ class ModuleExecutor:
         """Get the full local image name for a module.
 
         :param module_identifier: Name/identifier of the module.
-        :returns: Full image name with localhost prefix.
+        :returns: Full image name (may or may not have localhost prefix).
 
         """
         engine = self._get_engine()
+        
+        # Try common tags
+        tags_to_check = ["latest", "0.1.0", "0.0.1"]
+        
+        # Check OSS local builds first (no localhost/ prefix)
+        for tag in tags_to_check:
+            # Direct module name (fuzzforge-cargo-fuzzer:0.1.0)
+            direct_name = f"{module_identifier}:{tag}"
+            if engine.image_exists(direct_name):
+                return direct_name
+            
+            # With fuzzforge- prefix if not already present
+            if not module_identifier.startswith("fuzzforge-"):
+                prefixed_name = f"fuzzforge-{module_identifier}:{tag}"
+                if engine.image_exists(prefixed_name):
+                    return prefixed_name
 
-        # Check fuzzforge-module- prefix first (standard convention)
-        prefixed_name = f"localhost/fuzzforge-module-{module_identifier}:latest"
-        if engine.image_exists(prefixed_name):
-            return prefixed_name
+        # Check registry-style naming (localhost/ prefix)
+        for tag in tags_to_check:
+            # Standard convention: localhost/fuzzforge-module-{name}:{tag}
+            prefixed_name = f"localhost/fuzzforge-module-{module_identifier}:{tag}"
+            if engine.image_exists(prefixed_name):
+                return prefixed_name
+            
+            # Legacy short form: localhost/{name}:{tag}
+            short_name = f"localhost/{module_identifier}:{tag}"
+            if engine.image_exists(short_name):
+                return short_name
 
-        # Fall back to legacy short form
+        # Default fallback
         return f"localhost/{module_identifier}:latest"
 
     def _pull_module_image(self, module_identifier: str, registry_url: str = "ghcr.io/fuzzinglabs", tag: str = "latest") -> None:

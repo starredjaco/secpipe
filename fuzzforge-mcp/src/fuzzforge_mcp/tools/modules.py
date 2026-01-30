@@ -39,12 +39,13 @@ async def list_modules() -> dict[str, Any]:
         settings = get_settings()
 
         # Use the engine abstraction to list images
-        modules = runner.list_module_images(filter_prefix="localhost/")
+        # Default filter matches locally-built fuzzforge-* modules
+        modules = runner.list_module_images(filter_prefix="fuzzforge-")
 
         available_modules = [
             {
                 "identifier": module.identifier,
-                "image": f"localhost/{module.identifier}:{module.version or 'latest'}",
+                "image": f"{module.identifier}:{module.version or 'latest'}",
                 "available": module.available,
             }
             for module in modules

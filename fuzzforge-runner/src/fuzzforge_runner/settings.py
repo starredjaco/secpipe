@@ -20,17 +20,16 @@ class EngineType(StrEnum):
 class EngineSettings(BaseModel):
     """Container engine configuration."""
 
-    #: Type of container engine to use.
-    type: EngineType = EngineType.PODMAN
+    #: Type of container engine to use. Docker is the default for simplicity.
+    type: EngineType = EngineType.DOCKER
 
-    #: Path to the container engine socket (only used as fallback).
+    #: Path to the container engine socket (only used as fallback for socket-based engines).
     socket: str = Field(default="")
 
-    #: Custom graph root for container storage (isolated from system).
-    #: When set, uses CLI mode instead of socket for better portability.
+    #: Custom graph root for Podman storage (only used with Podman under Snap).
     graphroot: Path = Field(default=Path.home() / ".fuzzforge" / "containers" / "storage")
 
-    #: Custom run root for container runtime state.
+    #: Custom run root for Podman runtime state (only used with Podman under Snap).
     runroot: Path = Field(default=Path.home() / ".fuzzforge" / "containers" / "run")
 
 

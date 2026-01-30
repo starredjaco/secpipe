@@ -277,9 +277,9 @@ def generate(
         Option(
             "--engine",
             "-e",
-            help="Container engine (podman or docker).",
+            help="Container engine (docker or podman).",
         ),
-    ] = "podman",
+    ] = "docker",
 ) -> None:
     """Generate MCP configuration and print to stdout.
 
@@ -361,9 +361,9 @@ def install(
         Option(
             "--engine",
             "-e",
-            help="Container engine (podman or docker).",
+            help="Container engine (docker or podman).",
         ),
-    ] = "podman",
+    ] = "docker",
     force: Annotated[
         bool,
         Option(

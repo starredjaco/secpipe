@@ -7,3 +7,6 @@
 .venv
 .vscode
 __pycache__
+
+# Podman/Docker container storage artifacts
+~/.fuzzforge/

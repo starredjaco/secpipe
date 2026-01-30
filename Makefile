@@ -65,25 +65,29 @@ test:
 	done
 
 # Build all module container images
-# Under Snap: uses self-contained storage at ~/.fuzzforge/containers/
-# Otherwise: uses default podman storage (works on native Linux + macOS)
+# Uses Docker by default, or Podman if FUZZFORGE_ENGINE=podman
 build-modules:
 	@echo "Building FuzzForge module images..."
-	@if [ -n "$$SNAP" ]; then \
-		echo "Detected Snap environment - using isolated storage at ~/.fuzzforge/containers/"; \
-		PODMAN_CMD="podman --root ~/.fuzzforge/containers/storage --runroot ~/.fuzzforge/containers/run"; \
+	@if [ "$$FUZZFORGE_ENGINE" = "podman" ]; then \
+		if [ -n "$$SNAP" ]; then \
+			echo "Using Podman with isolated storage (Snap detected)"; \
+			CONTAINER_CMD="podman --root ~/.fuzzforge/containers/storage --runroot ~/.fuzzforge/containers/run"; \
+		else \
+			echo "Using Podman"; \
+			CONTAINER_CMD="podman"; \
+		fi; \
 	else \
-		echo "Using default podman storage"; \
-		PODMAN_CMD="podman"; \
+		echo "Using Docker"; \
+		CONTAINER_CMD="docker"; \
 	fi; \
 	for module in fuzzforge-modules/*/; do \
 		if [ -f "$$module/Dockerfile" ] && \
 		   [ "$$module" != "fuzzforge-modules/fuzzforge-modules-sdk/" ] && \
 		   [ "$$module" != "fuzzforge-modules/fuzzforge-module-template/" ]; then \
 			name=$$(basename $$module); \
-			version=$$(grep 'version' "$$module/pyproject.toml" 2>/dev/null | head -1 | sed 's/.*"\(.*\)".*/\1/' || echo "0.1.0"); \
+			version=$$(grep 'version' "$$module/pyproject.toml" 2>/dev/null | head -1 | sed 's/.*"\(.*\\)".*/\\1/' || echo "0.1.0"); \
 			echo "Building $$name:$$version..."; \
-			$$PODMAN_CMD build -t "fuzzforge-$$name:$$version" "$$module" || exit 1; \
+			$$CONTAINER_CMD build -t "fuzzforge-$$name:$$version" "$$module" || exit 1; \
 		fi \
 	done
 	@echo ""

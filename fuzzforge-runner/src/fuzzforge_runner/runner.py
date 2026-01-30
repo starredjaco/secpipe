@@ -174,12 +174,17 @@ class Runner:
         logger.info("discovered modules", count=len(modules))
         return modules
 
-    def list_module_images(self, filter_prefix: str = "localhost/") -> list[ModuleInfo]:
+    def list_module_images(
+        self,
+        filter_prefix: str = "fuzzforge-",
+        include_all_tags: bool = True,
+    ) -> list[ModuleInfo]:
         """List available module images from the container engine.
 
         Uses the container engine API to discover built module images.
 
-        :param filter_prefix: Prefix to filter images (default: "localhost/").
+        :param filter_prefix: Prefix to filter images (default: "fuzzforge-").
+        :param include_all_tags: If True, include all image tags, not just 'latest'.
         :returns: List of available module images.
 
         """
@@ -194,8 +199,8 @@ class Runner:
         images = engine.list_images(filter_prefix=filter_prefix)
 
         for image in images:
-            # Only include :latest images
-            if image.tag != "latest":
+            # Only include :latest images unless include_all_tags is set
+            if not include_all_tags and image.tag != "latest":
                 continue
 
             # Extract module name from repository

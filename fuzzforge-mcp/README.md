@@ -50,9 +50,7 @@ For custom setups, you can manually configure the MCP server.
       "cwd": "/path/to/fuzzforge-oss",
       "env": {
         "FUZZFORGE_MODULES_PATH": "/path/to/fuzzforge-oss/fuzzforge-modules",
-        "FUZZFORGE_ENGINE__TYPE": "podman",
-        "FUZZFORGE_ENGINE__GRAPHROOT": "~/.fuzzforge/containers/storage",
-        "FUZZFORGE_ENGINE__RUNROOT": "~/.fuzzforge/containers/run"
+        "FUZZFORGE_ENGINE__TYPE": "docker"
       }
     }
   }
@@ -71,9 +69,7 @@ For custom setups, you can manually configure the MCP server.
       "cwd": "/path/to/fuzzforge-oss",
       "env": {
         "FUZZFORGE_MODULES_PATH": "/path/to/fuzzforge-oss/fuzzforge-modules",
-        "FUZZFORGE_ENGINE__TYPE": "podman",
-        "FUZZFORGE_ENGINE__GRAPHROOT": "~/.fuzzforge/containers/storage",
-        "FUZZFORGE_ENGINE__RUNROOT": "~/.fuzzforge/containers/run"
+        "FUZZFORGE_ENGINE__TYPE": "docker"
       }
     }
   }
@@ -92,9 +88,7 @@ For custom setups, you can manually configure the MCP server.
       "cwd": "/path/to/fuzzforge-oss",
       "env": {
         "FUZZFORGE_MODULES_PATH": "/path/to/fuzzforge-oss/fuzzforge-modules",
-        "FUZZFORGE_ENGINE__TYPE": "podman",
-        "FUZZFORGE_ENGINE__GRAPHROOT": "~/.fuzzforge/containers/storage",
-        "FUZZFORGE_ENGINE__RUNROOT": "~/.fuzzforge/containers/run"
+        "FUZZFORGE_ENGINE__TYPE": "docker"
       }
     }
   }
@@ -106,9 +100,9 @@ For custom setups, you can manually configure the MCP server.
 | Variable | Required | Default | Description |
 | -------- | -------- | ------- | ----------- |
 | `FUZZFORGE_MODULES_PATH` | Yes | - | Path to the modules directory |
-| `FUZZFORGE_ENGINE__TYPE` | No | `podman` | Container engine (`podman` or `docker`) |
-| `FUZZFORGE_ENGINE__GRAPHROOT` | No | `~/.fuzzforge/containers/storage` | Container image storage path |
-| `FUZZFORGE_ENGINE__RUNROOT` | No | `~/.fuzzforge/containers/run` | Container runtime state path |
+| `FUZZFORGE_ENGINE__TYPE` | No | `docker` | Container engine (`docker` or `podman`) |
+| `FUZZFORGE_ENGINE__GRAPHROOT` | No | - | Container storage path (Podman under Snap only) |
+| `FUZZFORGE_ENGINE__RUNROOT` | No | - | Container runtime state path (Podman under Snap only) |
 
 ## Available Tools
 

@@ -51,7 +51,7 @@ def main(
             envvar="FUZZFORGE_ENGINE__TYPE",
             help="Container engine type (docker or podman).",
         ),
-    ] = "podman",
+    ] = "docker",
     engine_socket: Annotated[
         str,
         Option(

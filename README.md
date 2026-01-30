@@ -83,7 +83,7 @@ If you find FuzzForge useful, please **star the repo** to support development! �
 | Feature | Description |
 |---------|-------------|
 | 🤖 **AI-Native** | Built for MCP - works with GitHub Copilot, Claude, and any MCP-compatible agent |
-| 📦 **Containerized** | Each module runs in isolation via Podman or Docker |
+| 📦 **Containerized** | Each module runs in isolation via Docker or Podman |
 | 🔄 **Continuous Mode** | Long-running tasks (fuzzing) with real-time metrics streaming |
 | 🔗 **Workflows** | Chain multiple modules together in automated pipelines |
 | 🛠️ **Extensible** | Create custom modules with the Python SDK |
@@ -110,7 +110,7 @@ If you find FuzzForge useful, please **star the repo** to support development! �
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     FuzzForge Runner                            │
-│                  Container Engine (Podman/Docker)               │
+│                  Container Engine (Docker/Podman)               │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
         ┌───────────────────┼───────────────────┐
@@ -129,7 +129,7 @@ If you find FuzzForge useful, please **star the repo** to support development! �
 
 - **Python 3.12+**
 - **[uv](https://docs.astral.sh/uv/)** package manager
-- **Podman** (recommended) or Docker
+- **Docker** ([Install Docker](https://docs.docker.com/get-docker/)) or Podman
 
 ### Quick Install
 
@@ -141,8 +141,8 @@ cd fuzzforge-oss
 # Install dependencies
 uv sync
 
-# Start Podman socket (Linux)
-systemctl --user start podman.socket
+# Build module images
+make build-modules
 ```
 
 ### Configure MCP for Your AI Agent

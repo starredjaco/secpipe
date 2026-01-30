@@ -26,7 +26,7 @@ This guide covers everything you need to know to get started with FuzzForge OSS 
 
 ## Quick Start
 
-> **Prerequisites:** You need [uv](https://docs.astral.sh/uv/) and [Podman](https://podman.io/) installed.
+> **Prerequisites:** You need [uv](https://docs.astral.sh/uv/) and [Docker](https://docs.docker.com/get-docker/) installed.
 > See the [Prerequisites](#prerequisites) section for installation instructions.
 
 ```bash
@@ -51,8 +51,7 @@ uv run fuzzforge mcp install claude-code  # For Claude Code CLI
 #    "Start fuzzing the parse_input function"
 ```
 
-> **Note:** FuzzForge uses self-contained container storage (`~/.fuzzforge/containers/`)
-> which works automatically - no need to configure Podman sockets manually.
+> **Note:** FuzzForge uses Docker by default. Podman is also supported via `--engine podman`.
 
 ---
 
@@ -62,7 +61,7 @@ Before installing FuzzForge OSS, ensure you have:
 
 - **Python 3.12+** - [Download Python](https://www.python.org/downloads/)
 - **uv** package manager - [Install uv](https://docs.astral.sh/uv/)
-- **Podman** - Container runtime (Docker also works but Podman is recommended)
+- **Docker** - Container runtime ([Install Docker](https://docs.docker.com/get-docker/))
 
 ### Installing uv
 
@@ -74,18 +73,20 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 pip install uv
 ```
 
-### Installing Podman (Linux)
+### Installing Docker
 
 ```bash
-# Ubuntu/Debian
-sudo apt update && sudo apt install -y podman
+# Linux (Ubuntu/Debian)
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# Log out and back in for group changes to take effect
 
-# Fedora/RHEL
-sudo dnf install -y podman
-
-# Arch Linux
-sudo pacman -S podman
+# macOS/Windows
+# Install Docker Desktop from https://docs.docker.com/get-docker/
 ```
+
+> **Note:** Podman is also supported. Use `--engine podman` with CLI commands
+> or set `FUZZFORGE_ENGINE=podman` environment variable.
 
 ---
 
@@ -143,7 +144,7 @@ make build
 
 ```bash
 # List built module images
-podman images | grep fuzzforge
+docker images | grep fuzzforge
 ```
 
 You should see something like:
@@ -169,13 +170,13 @@ uv run fuzzforge mcp install copilot
 The command auto-detects everything:
 - **FuzzForge root** - Where FuzzForge is installed
 - **Modules path** - Defaults to `fuzzforge-oss/fuzzforge-modules`
-- **Podman socket** - Auto-detects `/run/user/<uid>/podman/podman.sock`
+- **Docker socket** - Auto-detects `/var/run/docker.sock`
 
 **Optional overrides** (usually not needed):
 ```bash
 uv run fuzzforge mcp install copilot \
   --modules /path/to/modules \
-  --engine docker  # if using Docker instead of Podman
+  --engine podman  # if using Podman instead of Docker
 ```
 
 **After installation:**
@@ -346,8 +347,10 @@ Configure FuzzForge using environment variables:
 export FUZZFORGE_MODULES_PATH=/path/to/modules
 export FUZZFORGE_STORAGE_PATH=/path/to/storage
 
-# Container engine (uses self-contained storage by default)
-export FUZZFORGE_ENGINE__TYPE=podman  # or docker
+# Container engine (Docker is default)
+export FUZZFORGE_ENGINE__TYPE=docker  # or podman
+
+# Podman-specific settings (only needed if using Podman under Snap)
 export FUZZFORGE_ENGINE__GRAPHROOT=~/.fuzzforge/containers/storage
 export FUZZFORGE_ENGINE__RUNROOT=~/.fuzzforge/containers/run
 ```
@@ -356,38 +359,38 @@ export FUZZFORGE_ENGINE__RUNROOT=~/.fuzzforge/containers/run
 
 ## Troubleshooting
 
-### Podman Socket Not Found
+### Docker Not Running
 
 ```
-Error: Could not connect to Podman socket
-```
-
-**Solution:**
-```bash
-# Start the Podman socket
-systemctl --user start podman.socket
-
-# Check the socket path
-echo /run/user/$(id -u)/podman/podman.sock
-```
-
-### Permission Denied on Socket
-
-```
-Error: Permission denied connecting to Podman socket
+Error: Cannot connect to Docker daemon
 ```
 
 **Solution:**
 ```bash
-# Ensure Podman is installed and your user can run containers
-podman run --rm hello-world
+# Linux: Start Docker service
+sudo systemctl start docker
 
-# If using system socket, ensure correct permissions
-ls -la /run/user/$(id -u)/podman/
+# macOS/Windows: Start Docker Desktop application
+
+# Verify Docker is running
+docker run --rm hello-world
 ```
 
-> **Note:** FuzzForge OSS uses self-contained storage (`~/.fuzzforge/containers/`) by default,
-> which avoids most permission issues with the Podman socket.
+### Permission Denied on Docker Socket
+
+```
+Error: Permission denied connecting to Docker socket
+```
+
+**Solution:**
+```bash
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+
+# Log out and back in for changes to take effect
+# Then verify:
+docker run --rm hello-world
+```
 
 ### No Modules Found
 
@@ -398,7 +401,7 @@ No modules found.
 **Solution:**
 1. Build the modules first: `make build-modules`
 2. Check the modules path: `uv run fuzzforge modules list`
-3. Verify images exist: `podman images | grep fuzzforge`
+3. Verify images exist: `docker images | grep fuzzforge`
 
 ### MCP Server Not Starting
 
@@ -414,7 +417,18 @@ Verify the configuration file path exists and contains valid JSON.
 ```bash
 # Build module container manually to see errors
 cd fuzzforge-modules/<module-name>
-podman build -t <module-name> .
+docker build -t <module-name> .
+```
+
+### Using Podman Instead of Docker
+
+If you prefer Podman:
+```bash
+# Use --engine podman with CLI
+uv run fuzzforge mcp install copilot --engine podman
+
+# Or set environment variable
+export FUZZFORGE_ENGINE=podman
 ```
 
 ### Check Logs
