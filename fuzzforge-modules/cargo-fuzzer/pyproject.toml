@@ -1,7 +1,7 @@
 [project]
-name = "cargo-fuzzer"
+name = "fuzzforge-cargo-fuzzer"
 version = "0.1.0"
-description = "FuzzForge module that runs cargo-fuzz with libFuzzer on Rust targets"
+description = "Runs continuous coverage-guided fuzzing on Rust targets using cargo-fuzz"
 authors = []
 readme = "README.md"
 requires-python = ">=3.14"
@@ -29,3 +29,34 @@ fuzzforge-modules-sdk = { workspace = true }
 
 [tool.uv]
 package = true
+
+# FuzzForge module metadata for AI agent discovery
+[tool.fuzzforge.module]
+identifier = "fuzzforge-cargo-fuzzer"
+category = "fuzzer"
+language = "rust"
+pipeline_stage = "fuzzing"
+pipeline_order = 3
+dependencies = ["fuzzforge-harness-tester"]
+continuous_mode = true
+typical_duration = "continuous"
+
+use_cases = [
+    "Run continuous coverage-guided fuzzing with libFuzzer",
+    "Execute cargo-fuzz on validated harnesses",
+    "Produce crash artifacts for analysis",
+    "Long-running fuzzing campaign"
+]
+
+input_requirements = [
+    "validated-harnesses",
+    "Cargo.toml",
+    "rust-source-code"
+]
+
+output_artifacts = [
+    "crashes/",
+    "coverage-data/",
+    "corpus/",
+    "fuzzing-stats.json"
+]

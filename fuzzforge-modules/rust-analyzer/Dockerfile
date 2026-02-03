@@ -1,5 +1,7 @@
 FROM localhost/fuzzforge-modules-sdk:0.1.0
 
+# Module metadata is now read from pyproject.toml [tool.fuzzforge.module] section
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \

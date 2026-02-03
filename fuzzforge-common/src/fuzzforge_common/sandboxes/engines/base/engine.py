@@ -25,6 +25,9 @@ class ImageInfo:
     #: Image size in bytes.
     size: int | None = None
 
+    #: Image labels/metadata.
+    labels: dict[str, str] | None = None
+
 
 class AbstractFuzzForgeSandboxEngine(ABC):
     """Abstract class used as a base for all FuzzForge sandbox engine classes."""
@@ -278,4 +281,18 @@ class AbstractFuzzForgeSandboxEngine(ABC):
 
         """
         message: str = f"method 'list_containers' is not implemented for class '{self.__class__.__name__}'"
+        raise NotImplementedError(message)
+
+    @abstractmethod
+    def read_file_from_image(self, image: str, path: str) -> str:
+        """Read a file from inside an image without starting a container.
+
+        Creates a temporary container, copies the file, and removes the container.
+
+        :param image: Image reference (e.g., "fuzzforge-rust-analyzer:latest").
+        :param path: Path to file inside image.
+        :returns: File contents as string.
+
+        """
+        message: str = f"method 'read_file_from_image' is not implemented for class '{self.__class__.__name__}'"
         raise NotImplementedError(message)

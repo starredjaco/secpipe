@@ -1,5 +1,7 @@
 FROM localhost/fuzzforge-modules-sdk:0.1.0
 
+# Module metadata is now read from pyproject.toml [tool.fuzzforge.module] section
+
 COPY ./src /app/src
 COPY ./pyproject.toml /app/pyproject.toml
 

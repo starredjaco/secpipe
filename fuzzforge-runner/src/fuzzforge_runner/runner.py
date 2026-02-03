@@ -53,6 +53,36 @@ class ModuleInfo:
     #: Whether module image exists locally.
     available: bool = True
 
+    #: Module category (analyzer, validator, fuzzer, reporter).
+    category: str | None = None
+
+    #: Target programming language (e.g., "rust", "python").
+    language: str | None = None
+
+    #: Pipeline stage name (e.g., "analysis", "fuzzing").
+    pipeline_stage: str | None = None
+
+    #: Numeric order in pipeline for sorting.
+    pipeline_order: int | None = None
+
+    #: Module identifiers that must run before this one.
+    dependencies: list[str] | None = None
+
+    #: Whether module supports continuous/background execution.
+    continuous_mode: bool = False
+
+    #: Expected runtime (e.g., "30s", "5m", "continuous").
+    typical_duration: str | None = None
+
+    #: Typical use cases and scenarios for this module.
+    use_cases: list[str] | None = None
+
+    #: Input requirements (e.g., ["rust-source-code", "Cargo.toml"]).
+    input_requirements: list[str] | None = None
+
+    #: Output artifacts produced (e.g., ["fuzzable_functions.json"]).
+    output_artifacts: list[str] | None = None
+
 
 class Runner:
     """Main FuzzForge Runner interface.
@@ -125,16 +155,19 @@ class Runner:
         return self._storage.init_project(project_path)
 
     def set_project_assets(self, project_path: Path, assets_path: Path) -> Path:
-        """Set initial assets for a project.
+        """Set source path for a project (no copying).
+
+        Just stores a reference to the source directory.
+        The source is mounted directly into containers at runtime.
 
         :param project_path: Path to the project directory.
-        :param assets_path: Path to assets (file or directory).
-        :returns: Path to stored assets.
+        :param assets_path: Path to source directory.
+        :returns: The assets path (unchanged).
 
         """
         logger = get_logger()
         logger.info("setting project assets", project=str(project_path), assets=str(assets_path))
-        return self._storage.store_assets(project_path, assets_path)
+        return self._storage.set_project_assets(project_path, assets_path)
 
     # -------------------------------------------------------------------------
     # Module Discovery
@@ -182,12 +215,15 @@ class Runner:
         """List available module images from the container engine.
 
         Uses the container engine API to discover built module images.
+        Reads metadata from pyproject.toml inside each image.
 
         :param filter_prefix: Prefix to filter images (default: "fuzzforge-").
         :param include_all_tags: If True, include all image tags, not just 'latest'.
         :returns: List of available module images.
 
         """
+        import tomllib  # noqa: PLC0415
+
         logger = get_logger()
         modules: list[ModuleInfo] = []
         seen: set[str] = set()
@@ -223,17 +259,66 @@ class Runner:
             # Add unique modules
             if module_name not in seen:
                 seen.add(module_name)
+
+                # Read metadata from pyproject.toml inside the image
+                image_ref = f"{image.repository}:{image.tag}"
+                module_meta = self._get_module_metadata_from_image(engine, image_ref)
+
+                # Get basic info from pyproject.toml [project] section
+                project_info = module_meta.get("_project", {})
+                fuzzforge_meta = module_meta.get("module", {})
+
                 modules.append(
                     ModuleInfo(
-                        identifier=module_name,
-                        description=None,
-                        version=image.tag,
+                        identifier=fuzzforge_meta.get("identifier", module_name),
+                        description=project_info.get("description"),
+                        version=project_info.get("version", image.tag),
                         available=True,
+                        category=fuzzforge_meta.get("category"),
+                        language=fuzzforge_meta.get("language"),
+                        pipeline_stage=fuzzforge_meta.get("pipeline_stage"),
+                        pipeline_order=fuzzforge_meta.get("pipeline_order"),
+                        dependencies=fuzzforge_meta.get("dependencies", []),
+                        continuous_mode=fuzzforge_meta.get("continuous_mode", False),
+                        typical_duration=fuzzforge_meta.get("typical_duration"),
+                        use_cases=fuzzforge_meta.get("use_cases", []),
+                        input_requirements=fuzzforge_meta.get("input_requirements", []),
+                        output_artifacts=fuzzforge_meta.get("output_artifacts", []),
                     )
                 )
 
         logger.info("listed module images", count=len(modules))
         return modules
+
+    def _get_module_metadata_from_image(self, engine: Any, image_ref: str) -> dict:
+        """Read module metadata from pyproject.toml inside a container image.
+
+        :param engine: Container engine instance.
+        :param image_ref: Image reference (e.g., "fuzzforge-rust-analyzer:latest").
+        :returns: Dict with module metadata from [tool.fuzzforge] section.
+
+        """
+        import tomllib  # noqa: PLC0415
+
+        logger = get_logger()
+
+        try:
+            # Read pyproject.toml from the image
+            content = engine.read_file_from_image(image_ref, "/app/pyproject.toml")
+            if not content:
+                logger.debug("no pyproject.toml found in image", image=image_ref)
+                return {}
+
+            pyproject = tomllib.loads(content)
+
+            # Return the [tool.fuzzforge] section plus [project] info
+            result = pyproject.get("tool", {}).get("fuzzforge", {})
+            result["_project"] = pyproject.get("project", {})
+            return result
+
+        except Exception as exc:
+            logger.debug("failed to read metadata from image", image=image_ref, error=str(exc))
+            return {}
 
     def get_module_info(self, module_identifier: str) -> ModuleInfo | None:
         """Get information about a specific module.

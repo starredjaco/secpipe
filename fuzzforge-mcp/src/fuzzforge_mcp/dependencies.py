@@ -14,6 +14,22 @@ if TYPE_CHECKING:
     from fastmcp import Context
 
 
+# Track the current active project path (set by init_project)
+_current_project_path: Path | None = None
+
+
+def set_current_project_path(project_path: Path) -> None:
+    """Set the current project path.
+
+    Called by init_project to track which project is active.
+
+    :param project_path: Path to the project directory.
+
+    """
+    global _current_project_path
+    _current_project_path = project_path
+
+
 def get_settings() -> Settings:
     """Get MCP server settings from context.
 
@@ -31,11 +47,17 @@ def get_settings() -> Settings:
 def get_project_path() -> Path:
     """Get the current project path.
 
+    Returns the project path set by init_project, or falls back to
+    the current working directory if no project has been initialized.
+
     :return: Path to the current project.
 
     """
-    settings: Settings = get_settings()
-    return Path(settings.project.default_path)
+    global _current_project_path
+    if _current_project_path is not None:
+        return _current_project_path
+    # Fall back to current working directory (where the AI agent is working)
+    return Path.cwd()
 
 
 def get_runner() -> Runner:

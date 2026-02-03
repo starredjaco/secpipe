@@ -34,22 +34,13 @@ class EngineSettings(BaseModel):
 
 
 class StorageSettings(BaseModel):
-    """Storage configuration for local or S3 storage."""
+    """Storage configuration for local filesystem storage.
 
-    #: Storage backend type.
-    type: Literal["local", "s3"] = "local"
+    OSS uses direct file mounting without archiving for simplicity.
+    """
 
-    #: Base path for local storage (used when type is "local").
+    #: Base path for local storage.
     path: Path = Field(default=Path.home() / ".fuzzforge" / "storage")
-
-    #: S3 endpoint URL (used when type is "s3").
-    s3_endpoint: str | None = None
-
-    #: S3 access key (used when type is "s3").
-    s3_access_key: str | None = None
-
-    #: S3 secret key (used when type is "s3").
-    s3_secret_key: str | None = None
 
 
 class ProjectSettings(BaseModel):

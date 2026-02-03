@@ -494,3 +494,40 @@ class Podman(AbstractFuzzForgeSandboxEngine):
                 }
                 for c in containers
             ]
+
+    def read_file_from_image(self, image: str, path: str) -> str:
+        """Read a file from inside an image without starting a long-running container.
+
+        Creates a temporary container, reads the file, and removes the container.
+
+        :param image: Image reference (e.g., "fuzzforge-rust-analyzer:latest").
+        :param path: Path to file inside image.
+        :returns: File contents as string.
+
+        """
+        logger = get_logger()
+        client: PodmanClient = self.get_client()
+        
+        with client:
+            try:
+                # Create a container that just runs cat on the file
+                container = client.containers.create(
+                    image=image,
+                    command=["cat", path],
+                    remove=True,
+                )
+                
+                # Start it and wait for completion
+                container.start()
+                container.wait()
+                
+                # Get the logs (which contain stdout)
+                output = container.logs(stdout=True, stderr=False)
+                
+                if isinstance(output, bytes):
+                    return output.decode("utf-8", errors="replace")
+                return str(output)
+                
+            except Exception as exc:
+                logger.debug("failed to read file from image", image=image, path=path, error=str(exc))
+                return ""

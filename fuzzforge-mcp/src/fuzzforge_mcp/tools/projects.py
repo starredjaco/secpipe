@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 
-from fuzzforge_mcp.dependencies import get_project_path, get_runner
+from fuzzforge_mcp.dependencies import get_project_path, get_runner, set_current_project_path
 
 if TYPE_CHECKING:
     from fuzzforge_runner import Runner
@@ -21,8 +21,12 @@ mcp: FastMCP = FastMCP()
 async def init_project(project_path: str | None = None) -> dict[str, Any]:
     """Initialize a new FuzzForge project.
 
-    Creates the necessary storage directories for a project. This should
-    be called before executing modules or workflows.
+    Creates a `.fuzzforge/` directory inside the project for storing:
+    - assets/: Input files (source code, etc.)
+    - inputs/: Prepared module inputs (for debugging)
+    - runs/: Execution results from each module
+
+    This should be called before executing modules or workflows.
 
     :param project_path: Path to the project directory. If not provided, uses current directory.
     :return: Project initialization result.
@@ -32,13 +36,17 @@ async def init_project(project_path: str | None = None) -> dict[str, Any]:
 
     try:
         path = Path(project_path) if project_path else get_project_path()
+        
+        # Track this as the current active project
+        set_current_project_path(path)
+        
         storage_path = runner.init_project(path)
 
         return {
             "success": True,
             "project_path": str(path),
             "storage_path": str(storage_path),
-            "message": f"Project initialized at {path}",
+            "message": f"Project initialized. Storage at {path}/.fuzzforge/",
         }
 
     except Exception as exception:

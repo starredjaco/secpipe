@@ -214,11 +214,13 @@ class WorkflowOrchestrator:
                             message = f"No assets available for step {step_index}"
                             raise WorkflowExecutionError(message)
 
-                    # Execute the module
+                    # Execute the module (inputs stored in .fuzzforge/inputs/)
                     results_path = await self._executor.execute(
                         module_identifier=step.module_identifier,
                         assets_path=current_assets,
                         configuration=step.configuration,
+                        project_path=project_path,
+                        execution_id=step_execution_id,
                     )
 
                     completed_at = datetime.now(UTC)

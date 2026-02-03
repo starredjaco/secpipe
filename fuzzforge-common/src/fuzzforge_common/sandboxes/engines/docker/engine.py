@@ -172,3 +172,8 @@ class Docker(AbstractFuzzForgeSandboxEngine):
         """List containers."""
         message: str = "Docker engine list_containers is not yet implemented"
         raise NotImplementedError(message)
+
+    def read_file_from_image(self, image: str, path: str) -> str:
+        """Read a file from inside an image without starting a long-running container."""
+        message: str = "Docker engine read_file_from_image is not yet implemented"
+        raise NotImplementedError(message)

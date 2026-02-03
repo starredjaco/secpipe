@@ -166,6 +166,9 @@ class PodmanCLI(AbstractFuzzForgeSandboxEngine):
                     repo = name
                     tag = "latest"
 
+                # Get labels if available
+                labels = image.get("Labels") or {}
+
                 images.append(
                     ImageInfo(
                         reference=name,
@@ -173,6 +176,7 @@ class PodmanCLI(AbstractFuzzForgeSandboxEngine):
                         tag=tag,
                         image_id=image.get("Id", "")[:12],
                         size=image.get("Size"),
+                        labels=labels,
                     )
                 )
 
@@ -473,6 +477,46 @@ class PodmanCLI(AbstractFuzzForgeSandboxEngine):
             ]
         except json.JSONDecodeError:
             return []
+
+    def read_file_from_image(self, image: str, path: str) -> str:
+        """Read a file from inside an image without starting a long-running container.
+
+        Creates a temporary container, reads the file via cat, and removes it.
+
+        :param image: Image reference (e.g., "fuzzforge-rust-analyzer:latest").
+        :param path: Path to file inside image.
+        :returns: File contents as string.
+
+        """
+        logger = get_logger()
+        
+        # Create a temporary container (don't start it)
+        create_result = self._run(
+            ["create", "--rm", image, "cat", path],
+            check=False,
+        )
+        
+        if create_result.returncode != 0:
+            logger.debug("failed to create container for file read", image=image, path=path)
+            return ""
+        
+        container_id = create_result.stdout.strip()
+        
+        try:
+            # Start the container and capture output (cat will run and exit)
+            start_result = self._run(
+                ["start", "-a", container_id],
+                check=False,
+            )
+            
+            if start_result.returncode != 0:
+                logger.debug("failed to read file from image", image=image, path=path)
+                return ""
+            
+            return start_result.stdout
+        finally:
+            # Cleanup: remove the container (may already be removed due to --rm)
+            self._run(["rm", "-f", container_id], check=False)
 
     # -------------------------------------------------------------------------
     # Utility Methods

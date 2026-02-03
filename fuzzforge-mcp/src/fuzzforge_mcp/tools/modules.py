@@ -29,7 +29,8 @@ async def list_modules() -> dict[str, Any]:
     """List all available FuzzForge modules.
 
     Returns information about modules that can be executed,
-    including their identifiers and availability status.
+    including their identifiers, availability status, and metadata
+    such as use cases, input requirements, and output artifacts.
 
     :return: Dictionary with list of available modules and their details.
 
@@ -47,9 +48,25 @@ async def list_modules() -> dict[str, Any]:
                 "identifier": module.identifier,
                 "image": f"{module.identifier}:{module.version or 'latest'}",
                 "available": module.available,
+                "description": module.description,
+                # New metadata fields from pyproject.toml
+                "category": module.category,
+                "language": module.language,
+                "pipeline_stage": module.pipeline_stage,
+                "pipeline_order": module.pipeline_order,
+                "dependencies": module.dependencies,
+                "continuous_mode": module.continuous_mode,
+                "typical_duration": module.typical_duration,
+                # AI-discoverable metadata
+                "use_cases": module.use_cases,
+                "input_requirements": module.input_requirements,
+                "output_artifacts": module.output_artifacts,
             }
             for module in modules
         ]
+
+        # Sort by pipeline_order if available
+        available_modules.sort(key=lambda m: (m.get("pipeline_order") or 999, m["identifier"]))
 
         return {
             "modules": available_modules,
@@ -151,6 +168,8 @@ async def start_continuous_module(
             module_identifier=module_identifier,
             assets_path=actual_assets_path,
             configuration=configuration,
+            project_path=project_path,
+            execution_id=session_id,
         )
 
         # Store execution info for tracking
@@ -162,6 +181,7 @@ async def start_continuous_module(
             "status": "running",
             "container_id": result["container_id"],
             "input_dir": result["input_dir"],
+            "project_path": str(project_path),
         }
 
         return {

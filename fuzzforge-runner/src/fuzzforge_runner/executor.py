@@ -322,14 +322,21 @@ class ModuleExecutor:
         self,
         assets_path: Path,
         configuration: dict[str, Any] | None = None,
+        project_path: Path | None = None,
+        execution_id: str | None = None,
     ) -> Path:
         """Prepare input directory with assets and configuration.
 
-        Creates a temporary directory with input.json describing all resources.
+        Creates a directory with input.json describing all resources.
         This directory can be volume-mounted into the container.
+
+        If assets_path is a directory, it is used directly (zero-copy mount).
+        If assets_path is a file (e.g., tar.gz), it is extracted first.
 
         :param assets_path: Path to the assets (file or directory).
         :param configuration: Optional module configuration dict.
+        :param project_path: Project directory for storing inputs in .fuzzforge/.
+        :param execution_id: Execution ID for organizing inputs.
         :returns: Path to prepared input directory.
         :raises SandboxError: If preparation fails.
 
@@ -339,12 +346,65 @@ class ModuleExecutor:
         logger.info("preparing input directory", assets=str(assets_path))
 
         try:
-            # Create temporary directory - caller must clean it up after container finishes
-            from tempfile import mkdtemp
+            # If assets_path is already a directory, use it directly (zero-copy mount)
+            if assets_path.exists() and assets_path.is_dir():
+                # Create input.json directly in the source directory
+                input_json_path = assets_path / "input.json"
+                
+                # Scan files and build resource list
+                resources = []
+                for item in assets_path.iterdir():
+                    if item.name == "input.json":
+                        continue
+                    if item.is_file():
+                        resources.append(
+                            {
+                                "name": item.stem,
+                                "description": f"Input file: {item.name}",
+                                "kind": "unknown",
+                                "path": f"/data/input/{item.name}",
+                            }
+                        )
+                    elif item.is_dir():
+                        resources.append(
+                            {
+                                "name": item.name,
+                                "description": f"Input directory: {item.name}",
+                                "kind": "unknown",
+                                "path": f"/data/input/{item.name}",
+                            }
+                        )
 
-            temp_path = Path(mkdtemp(prefix="fuzzforge-input-"))
+                input_data = {
+                    "settings": configuration or {},
+                    "resources": resources,
+                }
+                input_json_path.write_text(json.dumps(input_data, indent=2))
 
-            # Copy assets to temp directory
+                logger.debug("using source directory directly", path=str(assets_path))
+                return assets_path
+
+            # File input: extract to a directory first
+            # Determine input directory location
+            if project_path:
+                # Store inputs in .fuzzforge/inputs/ for visibility
+                from fuzzforge_runner.storage import FUZZFORGE_DIR_NAME
+                exec_id = execution_id or "latest"
+                input_dir = project_path / FUZZFORGE_DIR_NAME / "inputs" / exec_id
+                input_dir.mkdir(parents=True, exist_ok=True)
+                # Clean previous contents if exists
+                import shutil
+                for item in input_dir.iterdir():
+                    if item.is_file():
+                        item.unlink()
+                    elif item.is_dir():
+                        shutil.rmtree(item)
+            else:
+                # Fallback to temporary directory
+                from tempfile import mkdtemp
+                input_dir = Path(mkdtemp(prefix="fuzzforge-input-"))
+
+            # Copy/extract assets to input directory
             if assets_path.exists():
                 if assets_path.is_file():
                     # Check if it's a tar.gz archive that needs extraction
@@ -353,26 +413,26 @@ class ModuleExecutor:
                         import tarfile
 
                         with tarfile.open(assets_path, "r:gz") as tar:
-                            tar.extractall(path=temp_path)
+                            tar.extractall(path=input_dir)
                         logger.debug("extracted tar.gz archive", archive=str(assets_path))
                     else:
                         # Single file - copy it
                         import shutil
 
-                        shutil.copy2(assets_path, temp_path / assets_path.name)
+                        shutil.copy2(assets_path, input_dir / assets_path.name)
                 else:
                     # Directory - copy all files (including subdirectories)
                     import shutil
 
                     for item in assets_path.iterdir():
                         if item.is_file():
-                            shutil.copy2(item, temp_path / item.name)
+                            shutil.copy2(item, input_dir / item.name)
                         elif item.is_dir():
-                            shutil.copytree(item, temp_path / item.name)
+                            shutil.copytree(item, input_dir / item.name, dirs_exist_ok=True)
 
             # Scan files and directories and build resource list
             resources = []
-            for item in temp_path.iterdir():
+            for item in input_dir.iterdir():
                 if item.name == "input.json":
                     continue
                 if item.is_file():
@@ -399,11 +459,11 @@ class ModuleExecutor:
                 "settings": configuration or {},
                 "resources": resources,
             }
-            input_json_path = temp_path / "input.json"
+            input_json_path = input_dir / "input.json"
             input_json_path.write_text(json.dumps(input_data, indent=2))
 
-            logger.debug("prepared input directory", resources=len(resources), path=str(temp_path))
-            return temp_path
+            logger.debug("prepared input directory", resources=len(resources), path=str(input_dir))
+            return input_dir
 
         except Exception as exc:
             message = f"Failed to prepare input directory"
@@ -542,6 +602,8 @@ class ModuleExecutor:
         module_identifier: str,
         assets_path: Path,
         configuration: dict[str, Any] | None = None,
+        project_path: Path | None = None,
+        execution_id: str | None = None,
     ) -> Path:
         """Execute a module end-to-end.
 
@@ -552,9 +614,17 @@ class ModuleExecutor:
         4. Pull results
         5. Terminate sandbox
 
+        All intermediate files are stored in {project_path}/.fuzzforge/ for
+        easy debugging and visibility.
+
+        Source directories are mounted directly without tar.gz compression
+        for better performance.
+
         :param module_identifier: Name/identifier of the module to execute.
-        :param assets_path: Path to the input assets archive.
+        :param assets_path: Path to the input assets (file or directory).
         :param configuration: Optional module configuration.
+        :param project_path: Project directory for .fuzzforge/ storage.
+        :param execution_id: Execution ID for organizing files.
         :returns: Path to the results archive.
         :raises ModuleExecutionError: If any step fails.
 
@@ -562,10 +632,20 @@ class ModuleExecutor:
         logger = get_logger()
         sandbox: str | None = None
         input_dir: Path | None = None
+        # Don't cleanup if we're using the source directory directly
+        cleanup_input = False
 
         try:
             # 1. Prepare input directory with assets
-            input_dir = self.prepare_input_directory(assets_path, configuration)
+            input_dir = self.prepare_input_directory(
+                assets_path, 
+                configuration,
+                project_path=project_path,
+                execution_id=execution_id,
+            )
+
+            # Only cleanup if we created a temp directory (file input case)
+            cleanup_input = input_dir != assets_path and project_path is None
 
             # 2. Spawn sandbox with volume mount
             sandbox = self.spawn_sandbox(module_identifier, input_volume=input_dir)
@@ -585,12 +665,12 @@ class ModuleExecutor:
             return results_path
 
         finally:
-            # 5. Always cleanup
+            # 5. Always cleanup sandbox
             if sandbox:
                 self.terminate_sandbox(sandbox)
-            if input_dir and input_dir.exists():
+            # Only cleanup input if it was a temp directory
+            if cleanup_input and input_dir and input_dir.exists():
                 import shutil
-
                 shutil.rmtree(input_dir, ignore_errors=True)
 
     # -------------------------------------------------------------------------
@@ -602,22 +682,34 @@ class ModuleExecutor:
         module_identifier: str,
         assets_path: Path,
         configuration: dict[str, Any] | None = None,
+        project_path: Path | None = None,
+        execution_id: str | None = None,
     ) -> dict[str, Any]:
         """Start a module in continuous/background mode without waiting.
 
         Returns immediately with container info. Use read_module_output() to
         get current status and stop_module_continuous() to stop.
 
+        Source directories are mounted directly without tar.gz compression
+        for better performance.
+
         :param module_identifier: Name/identifier of the module to execute.
-        :param assets_path: Path to the input assets archive.
+        :param assets_path: Path to the input assets (file or directory).
         :param configuration: Optional module configuration.
+        :param project_path: Project directory for .fuzzforge/ storage.
+        :param execution_id: Execution ID for organizing files.
         :returns: Dict with container_id, input_dir for later cleanup.
 
         """
         logger = get_logger()
 
         # 1. Prepare input directory with assets
-        input_dir = self.prepare_input_directory(assets_path, configuration)
+        input_dir = self.prepare_input_directory(
+            assets_path, 
+            configuration,
+            project_path=project_path,
+            execution_id=execution_id,
+        )
 
         # 2. Spawn sandbox with volume mount
         sandbox = self.spawn_sandbox(module_identifier, input_volume=input_dir)
