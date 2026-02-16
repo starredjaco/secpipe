@@ -33,16 +33,11 @@ package = true
 # FuzzForge module metadata for AI agent discovery
 [tool.fuzzforge.module]
 identifier = "fuzzforge-cargo-fuzzer"
-category = "fuzzer"
-language = "rust"
-pipeline_stage = "fuzzing"
-pipeline_order = 3
 suggested_predecessors = ["fuzzforge-harness-tester"]
 continuous_mode = true
-typical_duration = "continuous"
 
 use_cases = [
-    "Run continuous coverage-guided fuzzing with libFuzzer",
+    "Run continuous coverage-guided fuzzing on Rust targets with libFuzzer",
     "Execute cargo-fuzz on validated harnesses",
     "Produce crash artifacts for analysis",
     "Long-running fuzzing campaign"
@@ -55,10 +50,9 @@ common_inputs = [
 ]
 
 output_artifacts = [
+    "fuzzing_results.json",
     "crashes/",
-    "coverage-data/",
-    "corpus/",
-    "fuzzing-stats.json"
+    "results.json"
 ]
 
-output_treatment = "Show fuzzing-stats.json as a live summary with total_executions, exec/sec, coverage_percent, and crashes_found. List files in crashes/ directory if any crashes found. The corpus/ and coverage-data/ directories are artifacts for downstream modules, don't display their contents."
+output_treatment = "Read fuzzing_results.json which contains: targets_fuzzed, total_crashes, total_executions, crashes_path, and results array with per-target crash info. Display summary of crashes found. The crashes/ directory contains crash inputs for downstream crash-analyzer."

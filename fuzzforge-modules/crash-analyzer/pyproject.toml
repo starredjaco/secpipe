@@ -34,16 +34,11 @@ package = true
 # FuzzForge module metadata for AI agent discovery
 [tool.fuzzforge.module]
 identifier = "fuzzforge-crash-analyzer"
-category = "reporter"
-language = "rust"
-pipeline_stage = "crash-analysis"
-pipeline_order = 4
 suggested_predecessors = ["fuzzforge-cargo-fuzzer"]
 continuous_mode = false
-typical_duration = "1m"
 
 use_cases = [
-    "Analyze crash artifacts from fuzzing",
+    "Analyze Rust crash artifacts from fuzzing",
     "Deduplicate crashes by stack trace signature",
     "Triage crashes by severity (critical, high, medium, low)",
     "Generate security vulnerability reports"
@@ -56,9 +51,8 @@ common_inputs = [
 ]
 
 output_artifacts = [
-    "unique-crashes.json",
-    "crash-report.md",
-    "severity-analysis.json"
+    "crash_analysis.json",
+    "results.json"
 ]
 
-output_treatment = "Display crash-report.md as rendered markdown - this is the primary output. Show unique-crashes.json as a table with crash ID, severity, and affected function. Summarize severity-analysis.json showing counts by severity level (critical, high, medium, low)."
+output_treatment = "Read crash_analysis.json which contains: total_crashes, unique_crashes, duplicate_crashes, severity_summary (high/medium/low/unknown counts), and unique_analyses array with details per crash. Display a summary table of unique crashes by severity."

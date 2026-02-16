@@ -458,34 +458,56 @@ class Module(FuzzForgeModule):
 
         """
         crashes: list[CrashInfo] = []
+        seen_hashes: set[str] = set()
 
         if self._fuzz_project_path is None or self._crashes_path is None:
             return crashes
 
-        # Check for crashes in the artifacts directory
-        artifacts_dir = self._fuzz_project_path / "artifacts" / target
+        # Check multiple possible crash locations:
+        # 1. Standard artifacts directory (target-specific)
+        # 2. Generic artifacts directory
+        # 3. Fuzz project root (fork mode sometimes writes here)
+        # 4. Project root (parent of fuzz directory)
+        search_paths = [
+            self._fuzz_project_path / "artifacts" / target,
+            self._fuzz_project_path / "artifacts",
+            self._fuzz_project_path,
+            self._fuzz_project_path.parent,
+        ]
 
-        if artifacts_dir.is_dir():
-            for crash_file in artifacts_dir.glob("crash-*"):
-                if crash_file.is_file():
-                    # Copy crash to output
-                    output_crash = self._crashes_path / target
-                    output_crash.mkdir(parents=True, exist_ok=True)
-                    dest = output_crash / crash_file.name
-                    shutil.copy2(crash_file, dest)
+        for search_dir in search_paths:
+            if not search_dir.is_dir():
+                continue
+                
+            # Use rglob to recursively find crash files
+            for crash_file in search_dir.rglob("crash-*"):
+                if not crash_file.is_file():
+                    continue
+                    
+                # Skip duplicates by hash
+                if crash_file.name in seen_hashes:
+                    continue
+                seen_hashes.add(crash_file.name)
 
-                    # Read crash input
-                    crash_data = crash_file.read_bytes()
+                # Copy crash to output
+                output_crash = self._crashes_path / target
+                output_crash.mkdir(parents=True, exist_ok=True)
+                dest = output_crash / crash_file.name
+                shutil.copy2(crash_file, dest)
 
-                    crash_info = CrashInfo(
-                        file_path=str(dest),
-                        input_hash=crash_file.name,
-                        input_size=len(crash_data),
-                    )
-                    crashes.append(crash_info)
+                # Read crash input
+                crash_data = crash_file.read_bytes()
 
-                    logger.info("found crash", target=target, file=crash_file.name)
+                crash_info = CrashInfo(
+                    file_path=str(dest),
+                    input_hash=crash_file.name,
+                    input_size=len(crash_data),
+                )
+                crashes.append(crash_info)
 
+                logger.info("found crash", target=target, file=crash_file.name, source=str(search_dir))
+
+        logger.info("crash collection complete", target=target, total_crashes=len(crashes))
         return crashes
 
     def _write_output(self) -> None:

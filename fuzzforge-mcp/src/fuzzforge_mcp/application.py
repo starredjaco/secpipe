@@ -46,10 +46,10 @@ FuzzForge is a security research orchestration platform. Use these tools to:
 
 Typical workflow:
 1. Initialize a project with `init_project`
-2. Set project assets with `set_project_assets` (optional)
+2. Set project assets with `set_project_assets` (optional, only needed once for the source directory)
 3. List available modules with `list_modules`
-4. Execute a module with `execute_module`
-5. Get results with `get_execution_results`
+4. Execute a module with `execute_module` — use `assets_path` param to pass different inputs per module
+5. Read outputs from `results_path` returned by `execute_module` — check module's `output_artifacts` metadata for filenames
 """,
     lifespan=lifespan,
 )

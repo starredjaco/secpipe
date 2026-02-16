@@ -30,13 +30,8 @@ package = true
 # FuzzForge module metadata for AI agent discovery
 [tool.fuzzforge.module]
 identifier = "fuzzforge-rust-analyzer"
-category = "analyzer"
-language = "rust"
-pipeline_stage = "analysis"
-pipeline_order = 1
 suggested_predecessors = []
 continuous_mode = false
-typical_duration = "30s"
 
 use_cases = [
     "Analyze Rust crate to find fuzzable functions",
@@ -50,8 +45,8 @@ common_inputs = [
 ]
 
 output_artifacts = [
-    "fuzzable_functions.json",
-    "analysis_report.md"
+    "analysis.json",
+    "results.json"
 ]
 
-output_treatment = "Display analysis_report.md as rendered markdown. Show fuzzable_functions.json as a table listing function names, signatures, and fuzz-worthiness scores."
+output_treatment = "Read analysis.json which contains: project_info, fuzzable_functions (array with name, signature, file_path, fuzz_score), and vulnerabilities (array of known CVEs). Display fuzzable_functions as a table. Highlight any vulnerabilities found."

@@ -56,12 +56,17 @@ async def init_project(project_path: str | None = None) -> dict[str, Any]:
 
 @mcp.tool
 async def set_project_assets(assets_path: str) -> dict[str, Any]:
-    """Set the initial assets for a project.
+    """Set the initial assets (source code) for a project.
 
-    Assets are input files that will be provided to modules during execution.
-    This could be source code, contracts, binaries, etc.
+    This sets the DEFAULT source directory mounted into modules.
+    Usually this is the project root containing source code (e.g. Cargo.toml, src/).
 
-    :param assets_path: Path to assets file (archive) or directory.
+    IMPORTANT: This OVERWRITES the previous assets path. Only call this once
+    during project setup. To pass different inputs to a specific module
+    (e.g. crash files to crash-analyzer), use the `assets_path` parameter
+    on `execute_module` instead.
+
+    :param assets_path: Path to the project source directory or archive.
     :return: Result including stored assets path.
 
     """
