@@ -45,8 +45,8 @@ common_inputs = [
 ]
 
 output_artifacts = [
-    "fuzzable_functions.json",
-    "analysis_report.md"
+    "analysis.json",
+    "results.json"
 ]
 
-output_treatment = "Display analysis_report.md as rendered markdown. Show fuzzable_functions.json as a table listing function names, signatures, and fuzz-worthiness scores."
+output_treatment = "Read analysis.json which contains: project_info, fuzzable_functions (array with name, signature, file_path, fuzz_score), and vulnerabilities (array of known CVEs). Display fuzzable_functions as a table. Highlight any vulnerabilities found."

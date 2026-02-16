@@ -6,7 +6,12 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "fuzzforge-modules-sdk==0.0.1",
+    "pydantic==2.12.4",
+    "structlog==25.5.0",
 ]
+
+[project.scripts]
+module = "module.__main__:main"
 
 [tool.uv.sources]
 fuzzforge-modules-sdk = { workspace = true }
@@ -18,8 +23,8 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/module"]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "mypy>=1.8.0",
     "pytest>=7.4.3",
     "pytest-asyncio>=0.21.1",
@@ -47,9 +52,9 @@ common_inputs = [
 ]
 
 output_artifacts = [
-    "harness-evaluation.json",
-    "coverage-report.json",
-    "feedback-summary.md"
+    "artifacts/harness-evaluation.json",
+    "artifacts/feedback-summary.md",
+    "results.json"
 ]
 
-output_treatment = "Display feedback-summary.md as rendered markdown for quick review. Show harness-evaluation.json summary with pass/fail status and error messages. Show coverage-report.json as a table of covered functions."
+output_treatment = "Display artifacts/feedback-summary.md as rendered markdown for quick review. Read artifacts/harness-evaluation.json for detailed per-harness results with verdict (production_ready/needs_improvement/broken), score, strengths, and issues with suggestions."

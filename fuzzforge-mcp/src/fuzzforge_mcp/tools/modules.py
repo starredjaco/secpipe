@@ -92,9 +92,14 @@ async def execute_module(
     This tool runs a module in a sandboxed environment.
     The module receives input assets and produces output results.
 
+    The response includes `results_path` pointing to the stored results archive.
+    Use this path directly to read outputs — no need to call `get_execution_results`.
+
     :param module_identifier: The identifier of the module to execute.
     :param configuration: Optional configuration dict to pass to the module.
-    :param assets_path: Optional path to input assets. If not provided, uses project assets.
+    :param assets_path: Optional path to input assets. Use this to pass specific
+        inputs to a module (e.g. crash files to crash-analyzer) without changing
+        the project's default assets. If not provided, uses project assets.
     :return: Execution result including status and results path.
 
     """

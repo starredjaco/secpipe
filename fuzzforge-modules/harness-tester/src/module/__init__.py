@@ -1,15 +1,18 @@
 """Harness tester module - tests and evaluates fuzz harnesses."""
 
+from __future__ import annotations
+
 import json
 import subprocess
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from fuzzforge_modules_sdk import (
-    FuzzForgeModule,
+from fuzzforge_modules_sdk.api.models import (
+    FuzzForgeModuleResource,
     FuzzForgeModuleResults,
-    FuzzForgeResource,
 )
+from fuzzforge_modules_sdk.api.modules.base import FuzzForgeModule
 
 from module.analyzer import FeedbackGenerator
 from module.feedback import (
@@ -23,22 +26,75 @@ from module.feedback import (
     PerformanceMetrics,
     StabilityMetrics,
 )
+from module.models import Input, Output
+from module.settings import Settings
 
 
 class HarnessTesterModule(FuzzForgeModule):
     """Tests fuzz harnesses with compilation, execution, and short fuzzing trials."""
 
-    def _run(self, resources: list[FuzzForgeResource]) -> FuzzForgeModuleResults:
+    _settings: Settings | None
+
+    def __init__(self) -> None:
+        """Initialize an instance of the class."""
+        name: str = "harness-tester"
+        version: str = "0.1.0"
+        FuzzForgeModule.__init__(self, name=name, version=version)
+        self._settings = None
+        self.configuration: dict[str, Any] = {}
+
+    @classmethod
+    def _get_input_type(cls) -> type[Input]:
+        """Return the input type."""
+        return Input
+
+    @classmethod
+    def _get_output_type(cls) -> type[Output]:
+        """Return the output type."""
+        return Output
+
+    def _prepare(self, settings: Settings) -> None:  # type: ignore[override]
+        """Prepare the module.
+
+        :param settings: Module settings.
+
+        """
+        self._settings = settings
+        self.configuration = {
+            "trial_duration_sec": settings.trial_duration_sec,
+            "execution_timeout_sec": settings.execution_timeout_sec,
+            "enable_coverage": settings.enable_coverage,
+            "min_quality_score": settings.min_quality_score,
+        }
+
+    def _cleanup(self, settings: Settings) -> None:  # type: ignore[override]
+        """Cleanup after module execution.
+
+        :param settings: Module settings.
+
+        """
+        pass  # No cleanup needed
+
+    def _run(self, resources: list[FuzzForgeModuleResource]) -> FuzzForgeModuleResults:
         """Run harness testing on provided resources.
 
         :param resources: List of resources (Rust project with fuzz harnesses)
         :returns: Module execution result
         """
+        import shutil
+        
         self.emit_event("started", message="Beginning harness testing")
 
         # Configuration
         trial_duration = self.configuration.get("trial_duration_sec", 30)
         timeout_sec = self.configuration.get("execution_timeout_sec", 10)
+
+        # Debug: Log resources
+        self.get_logger().info(
+            "Received resources",
+            count=len(resources),
+            resources=[str(r.path) for r in resources],
+        )
 
         # Find Rust project
         project_path = self._find_rust_project(resources)
@@ -46,8 +102,26 @@ class HarnessTesterModule(FuzzForgeModule):
             self.emit_event("error", message="No Rust project found in resources")
             return FuzzForgeModuleResults.FAILURE
 
+        # Copy project to writable workspace (input is read-only)
+        workspace = Path("/tmp/harness-workspace")
+        if workspace.exists():
+            shutil.rmtree(workspace)
+        shutil.copytree(project_path, workspace)
+        project_path = workspace
+        
+        self.get_logger().info("Copied project to writable workspace", path=str(project_path))
+
         # Find fuzz harnesses
         harnesses = self._find_fuzz_harnesses(project_path)
+        
+        # Debug: Log fuzz directory status
+        fuzz_dir = project_path / "fuzz" / "fuzz_targets"
+        self.get_logger().info(
+            "Checking fuzz directory",
+            fuzz_dir=str(fuzz_dir),
+            exists=fuzz_dir.exists(),
+        )
+        
         if not harnesses:
             self.emit_event("error", message="No fuzz harnesses found")
             return FuzzForgeModuleResults.FAILURE
@@ -110,16 +184,35 @@ class HarnessTesterModule(FuzzForgeModule):
 
         return FuzzForgeModuleResults.SUCCESS
 
-    def _find_rust_project(self, resources: list[FuzzForgeResource]) -> Path | None:
-        """Find Rust project with Cargo.toml.
+    def _find_rust_project(self, resources: list[FuzzForgeModuleResource]) -> Path | None:
+        """Find Rust project with Cargo.toml (the main project, not fuzz workspace).
 
         :param resources: List of resources
         :returns: Path to Rust project or None
         """
+        # First, try to find a directory with both Cargo.toml and src/
         for resource in resources:
-            cargo_toml = Path(resource.path) / "Cargo.toml"
+            path = Path(resource.path)
+            cargo_toml = path / "Cargo.toml"
+            src_dir = path / "src"
+            if cargo_toml.exists() and src_dir.exists():
+                return path
+        
+        # Fall back to finding parent of fuzz directory
+        for resource in resources:
+            path = Path(resource.path)
+            if path.name == "fuzz" and (path / "Cargo.toml").exists():
+                # This is the fuzz workspace, return parent
+                parent = path.parent
+                if (parent / "Cargo.toml").exists():
+                    return parent
+        
+        # Last resort: find any Cargo.toml
+        for resource in resources:
+            path = Path(resource.path)
+            cargo_toml = path / "Cargo.toml"
             if cargo_toml.exists():
-                return Path(resource.path)
+                return path
         return None
 
     def _find_fuzz_harnesses(self, project_path: Path) -> list[Path]:
@@ -156,59 +249,68 @@ class HarnessTesterModule(FuzzForgeModule):
         self.emit_event("compiling", harness=harness_name)
         compilation = self._test_compilation(project_path, harness_name)
 
-        # Initialize evaluation
-        evaluation = HarnessEvaluation(
-            name=harness_name,
-            path=str(harness_path),
-            compilation=compilation,
-            execution=None,
-            fuzzing_trial=None,
-            quality=None,  # type: ignore
-        )
-
-        # If compilation failed, generate feedback and return
+        # If compilation failed, generate feedback and return early
         if not compilation.success:
-            evaluation.quality = FeedbackGenerator.generate_quality_assessment(
-                compilation_result=compilation.dict(),
+            quality = FeedbackGenerator.generate_quality_assessment(
+                compilation_result=compilation.model_dump(),
                 execution_result=None,
                 coverage=None,
                 performance=None,
                 stability=None,
             )
-            return evaluation
+            return HarnessEvaluation(
+                name=harness_name,
+                path=str(harness_path),
+                compilation=compilation,
+                execution=None,
+                fuzzing_trial=None,
+                quality=quality,
+            )
 
         # Step 2: Execution test
         self.emit_event("testing_execution", harness=harness_name)
         execution = self._test_execution(project_path, harness_name, timeout_sec)
-        evaluation.execution = execution
 
         if not execution.success:
-            evaluation.quality = FeedbackGenerator.generate_quality_assessment(
-                compilation_result=compilation.dict(),
-                execution_result=execution.dict(),
+            quality = FeedbackGenerator.generate_quality_assessment(
+                compilation_result=compilation.model_dump(),
+                execution_result=execution.model_dump(),
                 coverage=None,
                 performance=None,
                 stability=None,
             )
-            return evaluation
+            return HarnessEvaluation(
+                name=harness_name,
+                path=str(harness_path),
+                compilation=compilation,
+                execution=execution,
+                fuzzing_trial=None,
+                quality=quality,
+            )
 
         # Step 3: Fuzzing trial
         self.emit_event("running_trial", harness=harness_name, duration=trial_duration)
         fuzzing_trial = self._run_fuzzing_trial(
             project_path, harness_name, trial_duration
         )
-        evaluation.fuzzing_trial = fuzzing_trial
 
         # Generate quality assessment
-        evaluation.quality = FeedbackGenerator.generate_quality_assessment(
-            compilation_result=compilation.dict(),
-            execution_result=execution.dict(),
+        quality = FeedbackGenerator.generate_quality_assessment(
+            compilation_result=compilation.model_dump(),
+            execution_result=execution.model_dump(),
             coverage=fuzzing_trial.coverage if fuzzing_trial else None,
             performance=fuzzing_trial.performance if fuzzing_trial else None,
             stability=fuzzing_trial.stability if fuzzing_trial else None,
         )
 
-        return evaluation
+        return HarnessEvaluation(
+            name=harness_name,
+            path=str(harness_path),
+            compilation=compilation,
+            execution=execution,
+            fuzzing_trial=fuzzing_trial,
+            quality=quality,
+        )
 
     def _test_compilation(self, project_path: Path, harness_name: str) -> CompilationResult:
         """Test harness compilation.
@@ -577,13 +679,18 @@ class HarnessTesterModule(FuzzForgeModule):
 
         :param report: Harness test report
         """
+        from fuzzforge_modules_sdk.api.constants import PATH_TO_ARTIFACTS
+        
+        # Ensure artifacts directory exists
+        PATH_TO_ARTIFACTS.mkdir(parents=True, exist_ok=True)
+        
         # Save JSON report
-        results_path = Path("/results/harness-evaluation.json")
+        results_path = PATH_TO_ARTIFACTS / "harness-evaluation.json"
         with results_path.open("w") as f:
-            json.dump(report.dict(), f, indent=2)
+            json.dump(report.model_dump(), f, indent=2)
 
         # Save human-readable summary
-        summary_path = Path("/results/feedback-summary.md")
+        summary_path = PATH_TO_ARTIFACTS / "feedback-summary.md"
         with summary_path.open("w") as f:
             f.write("# Harness Testing Report\n\n")
             f.write(f"**Total Harnesses:** {report.summary.total_harnesses}\n")
@@ -619,5 +726,5 @@ class HarnessTesterModule(FuzzForgeModule):
                     f.write("\n")
 
 
-# Entry point
-harness_tester = HarnessTesterModule()
+# Export the module class for use by __main__.py
+__all__ = ["HarnessTesterModule"]

@@ -279,5 +279,6 @@ BSL 1.1 - See [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <strong>Built with ❤️ by <a href="https://fuzzinglabs.com">FuzzingLabs</a></strong>
+  <strong>Maintained by <a href="https://fuzzinglabs.com">FuzzingLabs</a></strong>
+  <br>
 </p>

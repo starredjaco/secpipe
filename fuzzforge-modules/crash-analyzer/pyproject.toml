@@ -51,9 +51,8 @@ common_inputs = [
 ]
 
 output_artifacts = [
-    "unique-crashes.json",
-    "crash-report.md",
-    "severity-analysis.json"
+    "crash_analysis.json",
+    "results.json"
 ]
 
-output_treatment = "Display crash-report.md as rendered markdown - this is the primary output. Show unique-crashes.json as a table with crash ID, severity, and affected function. Summarize severity-analysis.json showing counts by severity level (critical, high, medium, low)."
+output_treatment = "Read crash_analysis.json which contains: total_crashes, unique_crashes, duplicate_crashes, severity_summary (high/medium/low/unknown counts), and unique_analyses array with details per crash. Display a summary table of unique crashes by severity."
