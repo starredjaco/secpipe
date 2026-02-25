@@ -741,6 +741,27 @@ class ModuleExecutor:
         engine = self._get_engine()
         return engine.read_file_from_container(container_id, output_file)
 
+    def read_module_output_incremental(
+        self,
+        container_id: str,
+        start_line: int = 1,
+        output_file: str = f"{SANDBOX_OUTPUT_DIRECTORY}/stream.jsonl",
+    ) -> str:
+        """Read new lines from an output file inside a running module container.
+
+        Uses ``tail -n +{start_line}`` so only lines appended since the last
+        read are returned.  Callers should track the number of lines already
+        consumed and pass ``start_line = previous_count + 1`` on the next call.
+
+        :param container_id: The container identifier.
+        :param start_line: 1-based line number to start reading from.
+        :param output_file: Path to output file inside container.
+        :returns: New file contents from *start_line* onwards (may be empty).
+
+        """
+        engine = self._get_engine()
+        return engine.tail_file_from_container(container_id, output_file, start_line=start_line)
+
     def get_module_status(self, container_id: str) -> str:
         """Get the status of a running module container.
 

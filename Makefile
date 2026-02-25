@@ -4,7 +4,7 @@ SHELL := /bin/bash
 
 # Default target
 help:
-	@echo "FuzzForge OSS Development Commands"
+	@echo "FuzzForge AI Development Commands"
 	@echo ""
 	@echo "  make install       - Install all dependencies"
 	@echo "  make sync          - Sync shared packages from upstream"

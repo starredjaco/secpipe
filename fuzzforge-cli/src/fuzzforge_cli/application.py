@@ -12,7 +12,7 @@ from fuzzforge_cli.context import Context
 
 application: Typer = Typer(
     name="fuzzforge",
-    help="FuzzForge OSS - Security research orchestration platform.",
+    help="FuzzForge AI - Security research orchestration platform.",
 )
 
 
@@ -62,7 +62,7 @@ def main(
     ] = "",
     context: TyperContext = None,  # type: ignore[assignment]
 ) -> None:
-    """FuzzForge OSS - Security research orchestration platform.
+    """FuzzForge AI - Security research orchestration platform.
 
     Execute security research modules in isolated containers.
 

@@ -187,6 +187,9 @@ async def start_continuous_module(
             "container_id": result["container_id"],
             "input_dir": result["input_dir"],
             "project_path": str(project_path),
+            # Incremental stream.jsonl tracking
+            "stream_lines_read": 0,
+            "total_crashes": 0,
         }
 
         return {
@@ -204,24 +207,29 @@ async def start_continuous_module(
 
 
 def _get_continuous_status_impl(session_id: str) -> dict[str, Any]:
-    """Internal helper to get continuous session status (non-tool version)."""
+    """Internal helper to get continuous session status (non-tool version).
+
+    Uses incremental reads of ``stream.jsonl`` via ``tail -n +offset`` so that
+    only new lines appended since the last poll are fetched and parsed.  Crash
+    counts and latest metrics are accumulated across polls.
+
+    """
     if session_id not in _background_executions:
         raise ToolError(f"Unknown session: {session_id}. Use list_continuous_sessions() to see active sessions.")
 
     execution = _background_executions[session_id]
     container_id = execution.get("container_id")
 
-    # Initialize metrics
+    # Carry forward accumulated state
     metrics: dict[str, Any] = {
         "total_executions": 0,
-        "total_crashes": 0,
+        "total_crashes": execution.get("total_crashes", 0),
         "exec_per_sec": 0,
         "coverage": 0,
         "current_target": "",
-        "latest_events": [],
+        "new_events": [],
     }
 
-    # Read stream.jsonl from inside the running container
     if container_id:
         try:
             runner: Runner = get_runner()
@@ -232,34 +240,45 @@ def _get_continuous_status_impl(session_id: str) -> dict[str, Any]:
             if container_status != "running":
                 execution["status"] = "stopped" if container_status == "exited" else container_status
 
-            # Read stream.jsonl from container
-            stream_content = executor.read_module_output(container_id, "/data/output/stream.jsonl")
+            # Incremental read: only fetch lines we haven't seen yet
+            lines_read: int = execution.get("stream_lines_read", 0)
+            stream_content = executor.read_module_output_incremental(
+                container_id,
+                start_line=lines_read + 1,
+                output_file="/data/output/stream.jsonl",
+            )
 
             if stream_content:
-                lines = stream_content.strip().split("\n")
-                # Get last 20 events
-                recent_lines = lines[-20:] if len(lines) > 20 else lines
-                crash_count = 0
+                new_lines = stream_content.strip().split("\n")
+                new_line_count = 0
 
-                for line in recent_lines:
+                for line in new_lines:
+                    if not line.strip():
+                        continue
                     try:
                         event = json.loads(line)
-                        metrics["latest_events"].append(event)
-
-                        # Extract metrics from events
-                        if event.get("event") == "metrics":
-                            metrics["total_executions"] = event.get("executions", 0)
-                            metrics["current_target"] = event.get("target", "")
-                            metrics["exec_per_sec"] = event.get("exec_per_sec", 0)
-                            metrics["coverage"] = event.get("coverage", 0)
-
-                        if event.get("event") == "crash_detected":
-                            crash_count += 1
-
                     except json.JSONDecodeError:
+                        # Possible torn read on the very last line — skip it
+                        # and do NOT advance the offset so it is re-read next
+                        # poll when the write is complete.
                         continue
 
-                metrics["total_crashes"] = crash_count
+                    new_line_count += 1
+                    metrics["new_events"].append(event)
+
+                    # Extract latest metrics snapshot
+                    if event.get("event") == "metrics":
+                        metrics["total_executions"] = event.get("executions", 0)
+                        metrics["current_target"] = event.get("target", "")
+                        metrics["exec_per_sec"] = event.get("exec_per_sec", 0)
+                        metrics["coverage"] = event.get("coverage", 0)
+
+                    if event.get("event") == "crash_detected":
+                        metrics["total_crashes"] += 1
+
+                # Advance offset by successfully parsed lines only
+                execution["stream_lines_read"] = lines_read + new_line_count
+                execution["total_crashes"] = metrics["total_crashes"]
 
         except Exception as e:
             metrics["error"] = str(e)

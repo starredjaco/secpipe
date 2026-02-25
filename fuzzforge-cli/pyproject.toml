@@ -1,7 +1,7 @@
 [project]
 name = "fuzzforge-cli"
 version = "0.0.1"
-description = "FuzzForge CLI - Command-line interface for FuzzForge OSS."
+description = "FuzzForge CLI - Command-line interface for FuzzForge AI."
 authors = []
 readme = "README.md"
 requires-python = ">=3.14"

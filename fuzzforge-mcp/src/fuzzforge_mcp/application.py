@@ -43,6 +43,7 @@ FuzzForge is a security research orchestration platform. Use these tools to:
 3. **Execute workflows**: Chain multiple modules together
 4. **Manage projects**: Initialize and configure projects
 5. **Get results**: Retrieve execution results
+6. **Hub tools**: Discover and execute tools from external MCP servers
 
 Typical workflow:
 1. Initialize a project with `init_project`
@@ -50,6 +51,11 @@ Typical workflow:
 3. List available modules with `list_modules`
 4. Execute a module with `execute_module` — use `assets_path` param to pass different inputs per module
 5. Read outputs from `results_path` returned by `execute_module` — check module's `output_artifacts` metadata for filenames
+
+Hub workflow:
+1. List available hub servers with `list_hub_servers`
+2. Discover tools from servers with `discover_hub_tools`
+3. Execute hub tools with `execute_hub_tool`
 """,
     lifespan=lifespan,
 )
