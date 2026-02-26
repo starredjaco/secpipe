@@ -49,24 +49,19 @@ async def list_modules() -> dict[str, Any]:
                 "image": f"{module.identifier}:{module.version or 'latest'}",
                 "available": module.available,
                 "description": module.description,
-                # New metadata fields from pyproject.toml
-                "category": module.category,
-                "language": module.language,
-                "pipeline_stage": module.pipeline_stage,
-                "pipeline_order": module.pipeline_order,
-                "dependencies": module.dependencies,
                 "continuous_mode": module.continuous_mode,
-                "typical_duration": module.typical_duration,
+                "suggested_predecessors": module.suggested_predecessors,
                 # AI-discoverable metadata
                 "use_cases": module.use_cases,
-                "input_requirements": module.input_requirements,
+                "common_inputs": module.common_inputs,
                 "output_artifacts": module.output_artifacts,
+                "output_treatment": module.output_treatment,
             }
             for module in modules
         ]
 
-        # Sort by pipeline_order if available
-        available_modules.sort(key=lambda m: (m.get("pipeline_order") or 999, m["identifier"]))
+        # Sort alphabetically by identifier
+        available_modules.sort(key=lambda m: m["identifier"])
 
         return {
             "modules": available_modules,

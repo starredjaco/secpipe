@@ -129,13 +129,13 @@ def _detect_docker_socket() -> str:
 def _find_fuzzforge_root() -> Path:
     """Find the FuzzForge installation root.
 
-    :returns: Path to fuzzforge-oss directory.
+    :returns: Path to fuzzforge-ai directory.
 
     """
     # Try to find from current file location
     current = Path(__file__).resolve()
 
-    # Walk up to find fuzzforge-oss root
+    # Walk up to find fuzzforge-ai root
     for parent in current.parents:
         if (parent / "fuzzforge-mcp").is_dir() and (parent / "fuzzforge-runner").is_dir():
             return parent
@@ -152,7 +152,7 @@ def _generate_mcp_config(
 ) -> dict:
     """Generate MCP server configuration.
 
-    :param fuzzforge_root: Path to fuzzforge-oss installation.
+    :param fuzzforge_root: Path to fuzzforge-ai installation.
     :param modules_path: Path to the modules directory.
     :param engine_type: Container engine type (podman or docker).
     :param engine_socket: Container engine socket path.
@@ -326,7 +326,7 @@ def generate(
     if agent == AIAgent.COPILOT:
         config_path = _get_copilot_mcp_path()
     elif agent == AIAgent.CLAUDE_CODE:
-        config_path = _get_claude_code_mcp_path(fuzzforge_root)
+        config_path = _get_claude_code_user_mcp_path()
     else:  # Claude Desktop
         config_path = _get_claude_desktop_mcp_path()
 

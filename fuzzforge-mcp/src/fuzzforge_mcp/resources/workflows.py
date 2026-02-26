@@ -1,6 +1,6 @@
 """Workflow resources for FuzzForge MCP.
 
-Note: In FuzzForge OSS, workflows are defined at runtime rather than
+Note: In FuzzForge AI, workflows are defined at runtime rather than
 stored. This resource provides documentation about workflow capabilities.
 
 """
@@ -19,7 +19,7 @@ mcp: FastMCP = FastMCP()
 async def get_workflow_help() -> dict[str, Any]:
     """Get help information about creating workflows.
 
-    Workflows in FuzzForge OSS are defined at execution time rather
+    Workflows in FuzzForge AI are defined at execution time rather
     than stored. Use the execute_workflow tool with step definitions.
 
     :return: Workflow documentation.

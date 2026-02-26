@@ -4,7 +4,7 @@ SHELL := /bin/bash
 
 # Default target
 help:
-	@echo "FuzzForge OSS Development Commands"
+	@echo "FuzzForge AI Development Commands"
 	@echo ""
 	@echo "  make install       - Install all dependencies"
 	@echo "  make sync          - Sync shared packages from upstream"
@@ -30,7 +30,7 @@ sync:
 
 # Format all packages
 format:
-	@for pkg in packages/fuzzforge-*/; do \
+	@for pkg in fuzzforge-*/; do \
 		if [ -f "$$pkg/pyproject.toml" ]; then \
 			echo "Formatting $$pkg..."; \
 			cd "$$pkg" && uv run ruff format . && cd -; \
@@ -39,7 +39,7 @@ format:
 
 # Lint all packages
 lint:
-	@for pkg in packages/fuzzforge-*/; do \
+	@for pkg in fuzzforge-*/; do \
 		if [ -f "$$pkg/pyproject.toml" ]; then \
 			echo "Linting $$pkg..."; \
 			cd "$$pkg" && uv run ruff check . && cd -; \
@@ -48,7 +48,7 @@ lint:
 
 # Type check all packages
 typecheck:
-	@for pkg in packages/fuzzforge-*/; do \
+	@for pkg in fuzzforge-*/; do \
 		if [ -f "$$pkg/pyproject.toml" ] && [ -f "$$pkg/mypy.ini" ]; then \
 			echo "Type checking $$pkg..."; \
 			cd "$$pkg" && uv run mypy . && cd -; \
@@ -57,7 +57,7 @@ typecheck:
 
 # Run all tests
 test:
-	@for pkg in packages/fuzzforge-*/; do \
+	@for pkg in fuzzforge-*/; do \
 		if [ -f "$$pkg/pytest.ini" ]; then \
 			echo "Testing $$pkg..."; \
 			cd "$$pkg" && uv run pytest && cd -; \
@@ -80,12 +80,18 @@ build-modules:
 		echo "Using Docker"; \
 		CONTAINER_CMD="docker"; \
 	fi; \
+	sdk_version=$$(grep 'version' "fuzzforge-modules/fuzzforge-modules-sdk/pyproject.toml" 2>/dev/null | head -1 | sed 's/.*"\(.*\)".*/\1/' || echo "0.1.0"); \
+	echo "Building fuzzforge-modules-sdk:$$sdk_version (base image)..."; \
+	$$CONTAINER_CMD build \
+		-t "fuzzforge-modules-sdk:$$sdk_version" \
+		-t "localhost/fuzzforge-modules-sdk:$$sdk_version" \
+		"fuzzforge-modules/fuzzforge-modules-sdk/" || exit 1; \
 	for module in fuzzforge-modules/*/; do \
 		if [ -f "$$module/Dockerfile" ] && \
 		   [ "$$module" != "fuzzforge-modules/fuzzforge-modules-sdk/" ] && \
 		   [ "$$module" != "fuzzforge-modules/fuzzforge-module-template/" ]; then \
 			name=$$(basename $$module); \
-			version=$$(grep 'version' "$$module/pyproject.toml" 2>/dev/null | head -1 | sed 's/.*"\(.*\\)".*/\\1/' || echo "0.1.0"); \
+			version=$$(grep 'version' "$$module/pyproject.toml" 2>/dev/null | head -1 | sed 's/.*"\(.*\)".*/\1/' || echo "0.1.0"); \
 			echo "Building $$name:$$version..."; \
 			$$CONTAINER_CMD build -t "fuzzforge-$$name:$$version" "$$module" || exit 1; \
 		fi \

@@ -1,7 +1,7 @@
 [project]
 name = "fuzzforge-runner"
 version = "0.0.1"
-description = "FuzzForge Runner - Direct execution engine for FuzzForge OSS."
+description = "FuzzForge Runner - Direct execution engine for FuzzForge AI."
 authors = []
 readme = "README.md"
 requires-python = ">=3.14"

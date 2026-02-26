@@ -18,8 +18,8 @@ WORKDIR /app
 # Create FuzzForge standard directories
 RUN mkdir -p /fuzzforge/input /fuzzforge/output
 
-# Copy wheels directory (built by parent Makefile)
-COPY .wheels /wheels
+# Create wheels directory (populated with pre-built wheels when available)
+RUN mkdir -p /wheels
 
 # Set up uv for the container
 ENV UV_SYSTEM_PYTHON=1

@@ -1,6 +1,6 @@
 # FuzzForge Runner
 
-Direct execution engine for FuzzForge OSS. Provides simplified module and workflow execution without requiring Temporal or external infrastructure.
+Direct execution engine for FuzzForge AI. Provides simplified module and workflow execution without requiring Temporal or external infrastructure.
 
 ## Overview
 

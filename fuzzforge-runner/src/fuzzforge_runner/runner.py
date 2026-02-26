@@ -1,6 +1,6 @@
 """FuzzForge Runner - Main runner interface.
 
-This module provides the high-level interface for FuzzForge OSS,
+This module provides the high-level interface for FuzzForge AI,
 coordinating module execution, workflow orchestration, and storage.
 
 """
