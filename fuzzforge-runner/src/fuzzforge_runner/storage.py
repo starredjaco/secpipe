@@ -39,7 +39,7 @@ def get_logger() -> BoundLogger:
 
 
 class LocalStorage:
-    """Local filesystem storage backend for FuzzForge OSS.
+    """Local filesystem storage backend for FuzzForge AI.
 
     Provides lightweight storage for execution results while using
     direct source mounting (no copying) for input assets.

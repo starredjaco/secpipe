@@ -1,6 +1,6 @@
-"""MCP tool tests for FuzzForge OSS.
+"""MCP tool tests for FuzzForge AI.
 
-Tests the MCP tools that are available in the OSS version.
+Tests the MCP tools that are available in FuzzForge AI.
 """
 
 import pytest

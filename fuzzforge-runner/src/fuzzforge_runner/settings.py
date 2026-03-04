@@ -71,6 +71,29 @@ class RegistrySettings(BaseModel):
     password: str | None = None
 
 
+class HubSettings(BaseModel):
+    """MCP Hub configuration for external tool servers.
+
+    Controls the hub that bridges FuzzForge with external MCP servers
+    (e.g., mcp-security-hub). When enabled, AI agents can discover
+    and execute tools from registered MCP servers.
+
+    Configure via environment variables:
+        ``FUZZFORGE_HUB__ENABLED=true``
+        ``FUZZFORGE_HUB__CONFIG_PATH=/path/to/hub-config.json``
+        ``FUZZFORGE_HUB__TIMEOUT=300``
+    """
+
+    #: Whether the MCP hub is enabled.
+    enabled: bool = Field(default=True)
+
+    #: Path to the hub configuration JSON file.
+    config_path: Path = Field(default=Path.home() / ".fuzzforge" / "hub-config.json")
+
+    #: Default timeout in seconds for hub tool execution.
+    timeout: int = Field(default=300)
+
+
 class Settings(BaseSettings):
     """FuzzForge Runner settings.
 
@@ -101,6 +124,9 @@ class Settings(BaseSettings):
 
     #: Container registry settings.
     registry: RegistrySettings = Field(default_factory=RegistrySettings)
+
+    #: MCP Hub settings.
+    hub: HubSettings = Field(default_factory=HubSettings)
 
     #: Path to modules directory (for development/local builds).
     modules_path: Path = Field(default=Path.home() / ".fuzzforge" / "modules")

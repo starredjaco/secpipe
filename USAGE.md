@@ -1,6 +1,6 @@
-# FuzzForge OSS Usage Guide
+# FuzzForge AI Usage Guide
 
-This guide covers everything you need to know to get started with FuzzForge OSS - from installation to running your first security research workflow with AI.
+This guide covers everything you need to know to get started with FuzzForge AI - from installation to running your first security research workflow with AI.
 
 > **FuzzForge is designed to be used with AI agents** (GitHub Copilot, Claude, etc.) via MCP.
 > The CLI is available for advanced users but the primary experience is through natural language interaction with your AI assistant.
@@ -31,8 +31,8 @@ This guide covers everything you need to know to get started with FuzzForge OSS 
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/FuzzingLabs/fuzzforge-oss.git
-cd fuzzforge-oss
+git clone https://github.com/FuzzingLabs/fuzzforge_ai.git
+cd fuzzforge_ai
 uv sync
 
 # 2. Build the module images (one-time setup)
@@ -57,7 +57,7 @@ uv run fuzzforge mcp install claude-code  # For Claude Code CLI
 
 ## Prerequisites
 
-Before installing FuzzForge OSS, ensure you have:
+Before installing FuzzForge AI, ensure you have:
 
 - **Python 3.12+** - [Download Python](https://www.python.org/downloads/)
 - **uv** package manager - [Install uv](https://docs.astral.sh/uv/)
@@ -95,8 +95,8 @@ sudo usermod -aG docker $USER
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/FuzzingLabs/fuzzforge-oss.git
-cd fuzzforge-oss
+git clone https://github.com/FuzzingLabs/fuzzforge_ai.git
+cd fuzzforge_ai
 ```
 
 ### 2. Install Dependencies
@@ -122,7 +122,7 @@ FuzzForge modules are containerized security tools. After cloning, you need to b
 ### Build All Modules
 
 ```bash
-# From the fuzzforge-oss directory
+# From the fuzzforge_ai directory
 make build-modules
 ```
 
@@ -169,7 +169,7 @@ uv run fuzzforge mcp install copilot
 
 The command auto-detects everything:
 - **FuzzForge root** - Where FuzzForge is installed
-- **Modules path** - Defaults to `fuzzforge-oss/fuzzforge-modules`
+- **Modules path** - Defaults to `fuzzforge_ai/fuzzforge-modules`
 - **Docker socket** - Auto-detects `/var/run/docker.sock`
 
 **Optional overrides** (usually not needed):
