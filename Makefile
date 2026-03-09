@@ -76,19 +76,30 @@ build-modules:
 			echo "Using Podman"; \
 			CONTAINER_CMD="podman"; \
 		fi; \
+		BASE_IMG_PREFIX="localhost/"; \
 	else \
 		echo "Using Docker"; \
 		CONTAINER_CMD="docker"; \
+		BASE_IMG_PREFIX=""; \
 	fi; \
+	SDK_DIR="fuzzforge-modules/fuzzforge-modules-sdk/"; \
+	SDK_VERSION=$$(grep 'version' "$${SDK_DIR}pyproject.toml" 2>/dev/null | head -1 | sed 's/version = //;s/"//g' || echo "0.0.1"); \
+	echo "Building wheels for fuzzforge-modules-sdk..."; \
+	(cd "$$SDK_DIR" && uv build --wheel --out-dir .wheels) || exit 1; \
+	echo "Building fuzzforge-modules-sdk:$$SDK_VERSION..."; \
+	$$CONTAINER_CMD build -t "fuzzforge-modules-sdk:$$SDK_VERSION" "$$SDK_DIR" || exit 1; \
 	for module in fuzzforge-modules/*/; do \
-		if [ -f "$$module/Dockerfile" ] && \
-		   [ "$$module" != "fuzzforge-modules/fuzzforge-modules-sdk/" ] && \
-		   [ "$$module" != "fuzzforge-modules/fuzzforge-module-template/" ]; then \
-			name=$$(basename $$module); \
-			version=$$(grep 'version' "$$module/pyproject.toml" 2>/dev/null | head -1 | sed 's/.*"\(.*\\)".*/\\1/' || echo "0.1.0"); \
-			echo "Building $$name:$$version..."; \
-			$$CONTAINER_CMD build -t "fuzzforge-$$name:$$version" "$$module" || exit 1; \
-		fi \
+		[ "$$module" = "$$SDK_DIR" ] || [ ! -f "$$module/Dockerfile" ] && continue; \
+		name=$$(basename $$module); \
+		version=$$(grep 'version' "$$module/pyproject.toml" 2>/dev/null | head -1 | sed 's/version = //;s/"//g'); \
+		case $$name in \
+			fuzzforge-*) tag="$$name:$$version" ;; \
+			*) tag="fuzzforge-$$name:$$version" ;; \
+		esac; \
+		echo "Building $$tag..."; \
+		$$CONTAINER_CMD build \
+			--build-arg BASE_IMAGE="$${BASE_IMG_PREFIX}fuzzforge-modules-sdk:$$SDK_VERSION" \
+			-t "$$tag" "$$module" || exit 1; \
 	done
 	@echo ""
 	@echo "✓ All modules built successfully!"
