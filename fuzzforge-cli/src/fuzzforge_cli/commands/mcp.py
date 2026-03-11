@@ -174,9 +174,10 @@ def _generate_mcp_config(
         command = "uv"
         args = ["--directory", str(fuzzforge_root), "run", "fuzzforge-mcp"]
 
-    # Self-contained storage paths for FuzzForge containers
-    # This isolates FuzzForge from system Podman and avoids snap issues
-    fuzzforge_home = Path.cwd() / ".fuzzforge"
+    # User-global storage paths for FuzzForge containers.
+    # Kept under ~/.fuzzforge so images are built once and shared across
+    # all workspaces — regardless of where `fuzzforge mcp install` is run.
+    fuzzforge_home = Path.home() / ".fuzzforge"
     graphroot = fuzzforge_home / "containers" / "storage"
     runroot = fuzzforge_home / "containers" / "run"
 

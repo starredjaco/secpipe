@@ -30,12 +30,25 @@ FUZZFORGE_DEFAULT_HUB_URL = "git@github.com:FuzzingLabs/mcp-security-hub.git"
 FUZZFORGE_DEFAULT_HUB_NAME = "mcp-security-hub"
 
 
+def get_fuzzforge_user_dir() -> Path:
+    """Return the user-global ``~/.fuzzforge/`` directory.
+
+    Stores data that is shared across all workspaces: cloned hub
+    repositories, the hub registry, container storage (graphroot/runroot),
+    and the hub workspace volume.
+
+    :return: ``Path.home() / ".fuzzforge"``
+
+    """
+    return Path.home() / ".fuzzforge"
+
+
 def get_fuzzforge_dir() -> Path:
     """Return the project-local ``.fuzzforge/`` directory.
 
-    Uses the current working directory so that each project gets its
-    own isolated FuzzForge configuration, hubs, and storage — similar
-    to how ``.git/`` or ``.venv/`` work.
+    Stores data that is specific to the current workspace: fuzzing
+    results and project artifacts.  Similar to how ``.git/`` scopes
+    version-control data to a single project.
 
     :return: ``Path.cwd() / ".fuzzforge"``
 
@@ -238,21 +251,27 @@ def uninstall_agent_config(agent: AIAgent) -> str:
 
 
 def get_hubs_registry_path() -> Path:
-    """Return path to the hubs registry file (``.fuzzforge/hubs.json``).
+    """Return path to the hubs registry file (``~/.fuzzforge/hubs.json``).
+
+    Stored in the user-global directory so the registry is shared across
+    all workspaces.
 
     :return: Path to the registry JSON file.
 
     """
-    return get_fuzzforge_dir() / "hubs.json"
+    return get_fuzzforge_user_dir() / "hubs.json"
 
 
 def get_default_hubs_dir() -> Path:
-    """Return default directory for cloned hubs (``.fuzzforge/hubs/``).
+    """Return default directory for cloned hubs (``~/.fuzzforge/hubs/``).
+
+    Stored in the user-global directory so hubs are cloned once and
+    reused in every workspace.
 
     :return: Path to the default hubs directory.
 
     """
-    return get_fuzzforge_dir() / "hubs"
+    return get_fuzzforge_user_dir() / "hubs"
 
 
 def load_hubs_registry() -> dict[str, Any]:
@@ -322,7 +341,7 @@ def scan_hub_for_servers(hub_path: Path) -> list[dict[str, Any]]:
                 "image": f"{tool_name}:latest",
                 "category": category,
                 "capabilities": capabilities,
-                "volumes": [f"{get_fuzzforge_dir()}/hub/workspace:/data"],
+                "volumes": [f"{get_fuzzforge_user_dir()}/hub/workspace:/data"],
                 "enabled": True,
             }
         )
