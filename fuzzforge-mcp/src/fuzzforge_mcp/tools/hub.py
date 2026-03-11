@@ -195,8 +195,7 @@ async def execute_hub_tool(
                     f"{assets_str}:/app/uploads:ro",
                     f"{assets_str}:/app/samples:ro",
                 ]
-        except Exception:
-            # Never block tool execution because of asset injection failure
+        except Exception:  # noqa: BLE001 - never block tool execution due to asset injection failure
             extra_volumes = []
 
         result = await executor.execute_tool(
