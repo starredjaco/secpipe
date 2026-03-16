@@ -85,9 +85,9 @@ async def set_project_assets(assets_path: str) -> dict[str, Any]:
 async def list_executions() -> dict[str, Any]:
     """List all executions for the current project.
 
-    Returns a list of execution IDs that can be used to retrieve results.
+    Returns execution summaries including server, tool, timestamp, and success status.
 
-    :return: List of execution IDs.
+    :return: List of execution summaries.
 
     """
     storage = get_storage()
