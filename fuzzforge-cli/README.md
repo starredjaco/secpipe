@@ -1,3 +1,3 @@
-# FuzzForge CLI
+# SecPipe CLI
 
 ...

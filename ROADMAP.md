@@ -1,6 +1,6 @@
-# FuzzForge AI Roadmap
+# SecPipe AI Roadmap
 
-This document outlines the planned features and development direction for FuzzForge AI.
+This document outlines the planned features and development direction for SecPipe AI.
 
 ---
 
@@ -10,27 +10,27 @@ This document outlines the planned features and development direction for FuzzFo
 
 **Status:** 🔄 Planned
 
-Integrate [mcp-security-hub](https://github.com/FuzzingLabs/mcp-security-hub) tools into FuzzForge, giving AI agents access to 28 MCP servers and 163+ security tools through a unified interface.
+Integrate [mcp-security-hub](https://github.com/FuzzingLabs/mcp-security-hub) tools into SecPipe, giving AI agents access to 28 MCP servers and 163+ security tools through a unified interface.
 
 #### How It Works
 
-Unlike native FuzzForge modules (built with the SDK), mcp-security-hub tools are **standalone MCP servers**. The integration will bridge these tools so they can be:
+Unlike native SecPipe modules (built with the SDK), mcp-security-hub tools are **standalone MCP servers**. The integration will bridge these tools so they can be:
 
 - Discovered via `list_modules` alongside native modules
-- Executed through FuzzForge's orchestration layer
+- Executed through SecPipe's orchestration layer
 - Chained with native modules in workflows
 
 | Aspect | Native Modules | MCP Hub Tools |
 |--------|----------------|---------------|
-| **Runtime** | FuzzForge SDK container | Standalone MCP server container |
+| **Runtime** | SecPipe SDK container | Standalone MCP server container |
 | **Protocol** | Direct execution | MCP-to-MCP bridge |
 | **Configuration** | Module config | Tool-specific args |
-| **Output** | FuzzForge results format | Tool-native format (normalized) |
+| **Output** | SecPipe results format | Tool-native format (normalized) |
 
 #### Goals
 
 - Unified discovery of all available tools (native + hub)
-- Orchestrate hub tools through FuzzForge's workflow engine
+- Orchestrate hub tools through SecPipe's workflow engine
 - Normalize outputs for consistent result handling
 - No modification required to mcp-security-hub tools
 
@@ -65,7 +65,7 @@ AI Agent:
 
 **Status:** 🔄 Planned
 
-A graphical interface to manage FuzzForge without the command line.
+A graphical interface to manage SecPipe without the command line.
 
 #### Goals
 

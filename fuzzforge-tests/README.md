@@ -1,3 +1,3 @@
-# fuzzforge-tests
+# SecPipe Tests
 
-Common test utilities and fixtures for FuzzForge packages.
+Common test utilities and fixtures for SecPipe packages.

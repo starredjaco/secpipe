@@ -1,8 +1,8 @@
-# FuzzForge AI Usage Guide
+# SecPipe AI Usage Guide
 
-This guide covers everything you need to know to get started with FuzzForge AI — from installation to linking your first MCP hub and running security research workflows with AI.
+This guide covers everything you need to know to get started with SecPipe AI — from installation to linking your first MCP hub and running security research workflows with AI.
 
-> **FuzzForge is designed to be used with AI agents** (GitHub Copilot, Claude, etc.) via MCP.
+> **SecPipe is designed to be used with AI agents** (GitHub Copilot, Claude, etc.) via MCP.
 > A terminal UI (`fuzzforge ui`) is provided for managing agents and hubs.
 > The CLI is available for advanced users but the primary experience is through natural language interaction with your AI assistant.
 
@@ -27,7 +27,7 @@ This guide covers everything you need to know to get started with FuzzForge AI �
   - [GitHub Copilot](#github-copilot)
   - [Claude Code (CLI)](#claude-code-cli)
   - [Claude Desktop](#claude-desktop)
-- [Using FuzzForge with AI](#using-fuzzforge-with-ai)
+- [Using SecPipe with AI](#using-secpipe-with-ai)
 - [CLI Reference](#cli-reference)
 - [Environment Variables](#environment-variables)
 - [Troubleshooting](#troubleshooting)
@@ -76,13 +76,13 @@ git clone git@github.com:FuzzingLabs/mcp-security-hub.git ~/.fuzzforge/hubs/mcp-
 # Restart your AI agent — done!
 ```
 
-> **Note:** FuzzForge uses Docker by default. Podman is also supported via `--engine podman`.
+> **Note:** SecPipe uses Docker by default. Podman is also supported via `--engine podman`.
 
 ---
 
 ## Prerequisites
 
-Before installing FuzzForge AI, ensure you have:
+Before installing SecPipe AI, ensure you have:
 
 - **Python 3.12+** — [Download Python](https://www.python.org/downloads/)
 - **uv** package manager — [Install uv](https://docs.astral.sh/uv/)
@@ -131,7 +131,7 @@ cd fuzzforge_ai
 uv sync
 ```
 
-This installs all FuzzForge components in a virtual environment.
+This installs all SecPipe components in a virtual environment.
 
 ### 3. Verify Installation
 
@@ -143,7 +143,7 @@ uv run fuzzforge --help
 
 ## Terminal UI
 
-FuzzForge ships with a terminal user interface (TUI) built on [Textual](https://textual.textualize.io/) for managing AI agents and MCP hub servers from a single dashboard.
+SecPipe ships with a terminal user interface (TUI) built on [Textual](https://textual.textualize.io/) for managing AI agents and MCP hub servers from a single dashboard.
 
 ### Launching the UI
 
@@ -173,11 +173,11 @@ The main screen is split into two panels:
 
 Select an agent row in the AI Agents table and press `Enter`:
 
-- **If the agent is not linked** → a setup dialog opens asking for your container engine (Docker or Podman), then installs the FuzzForge MCP configuration
+- **If the agent is not linked** → a setup dialog opens asking for your container engine (Docker or Podman), then installs the SecPipe MCP configuration
 - **If the agent is already linked** → a confirmation dialog offers to unlink it (removes the `fuzzforge` entry without touching other MCP servers)
 
 The setup auto-detects:
-- FuzzForge installation root
+- SecPipe installation root
 - Docker/Podman socket path
 - Hub configuration from `hub-config.json`
 
@@ -188,7 +188,7 @@ Press `h` to open the hub manager. This is where you manage your MCP hub reposit
 | Button | Action |
 |--------|--------|
 | **FuzzingLabs Hub** | One-click clone of the official [mcp-security-hub](https://github.com/FuzzingLabs/mcp-security-hub) repository — clones to `~/.fuzzforge/hubs/mcp-security-hub`, scans for tools, and registers them in `hub-config.json` |
-| **Link Path** | Link any local directory as a hub — enter a name and path, FuzzForge scans it for `category/tool-name/Dockerfile` patterns |
+| **Link Path** | Link any local directory as a hub — enter a name and path, SecPipe scans it for `category/tool-name/Dockerfile` patterns |
 | **Clone URL** | Clone any git repository and link it as a hub |
 | **Remove** | Unlink the selected hub and remove its servers from the configuration |
 
@@ -219,7 +219,7 @@ my-hub/
 └── ...
 ```
 
-FuzzForge scans for the pattern `category/tool-name/Dockerfile` and auto-generates server configuration entries for each discovered tool.
+SecPipe scans for the pattern `category/tool-name/Dockerfile` and auto-generates server configuration entries for each discovered tool.
 
 ### FuzzingLabs Security Hub
 
@@ -290,7 +290,7 @@ uv run fuzzforge mcp install copilot
 ```
 
 The command auto-detects:
-- **FuzzForge root** — Where FuzzForge is installed
+- **SecPipe root** — Where SecPipe is installed
 - **Docker socket** — Auto-detects `/var/run/docker.sock`
 
 **Optional overrides:**
@@ -298,7 +298,7 @@ The command auto-detects:
 uv run fuzzforge mcp install copilot --engine podman
 ```
 
-**After installation:** Restart VS Code. FuzzForge tools appear in GitHub Copilot Chat.
+**After installation:** Restart VS Code. SecPipe tools appear in GitHub Copilot Chat.
 
 ### Claude Code (CLI)
 
@@ -306,7 +306,7 @@ uv run fuzzforge mcp install copilot --engine podman
 uv run fuzzforge mcp install claude-code
 ```
 
-Installs to `~/.claude.json`. FuzzForge tools are available from any directory after restarting Claude.
+Installs to `~/.claude.json`. SecPipe tools are available from any directory after restarting Claude.
 
 ### Claude Desktop
 
@@ -332,15 +332,15 @@ uv run fuzzforge mcp uninstall claude-desktop
 
 ---
 
-## Using FuzzForge with AI
+## Using SecPipe with AI
 
-Once MCP is configured and hub images are built, interact with FuzzForge through natural language with your AI assistant.
+Once MCP is configured and hub images are built, interact with SecPipe through natural language with your AI assistant.
 
 ### Example Conversations
 
 **Discover available tools:**
 ```
-You: "What security tools are available in FuzzForge?"
+You: "What security tools are available in SecPipe?"
 AI: Queries hub tools → "I found 15 tools across categories: nmap for 
     port scanning, binwalk for firmware analysis, semgrep for code 
     scanning, cargo-fuzzer for Rust fuzzing..."
@@ -402,10 +402,10 @@ uv run fuzzforge project results <id>     # Get execution results
 
 ## Environment Variables
 
-Configure FuzzForge using environment variables:
+Configure SecPipe using environment variables:
 
 ```bash
-# Override the FuzzForge installation root (auto-detected from cwd by default)
+# Override the SecPipe installation root (auto-detected from cwd by default)
 export FUZZFORGE_ROOT=/path/to/fuzzforge_ai
 
 # Override the user-global data directory (default: ~/.fuzzforge)
@@ -492,7 +492,7 @@ export FUZZFORGE_ENGINE=podman
 
 ### Hub Registry
 
-FuzzForge stores linked hub information in `~/.fuzzforge/hubs.json`. If something goes wrong:
+SecPipe stores linked hub information in `~/.fuzzforge/hubs.json`. If something goes wrong:
 
 ```bash
 # View registry

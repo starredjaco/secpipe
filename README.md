@@ -6,7 +6,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-BSL%201.1-blue" alt="License: BSL 1.1"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python 3.12+"/></a>
   <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-compatible-green" alt="MCP Compatible"/></a>
-  <a href="https://fuzzforge.ai"><img src="https://img.shields.io/badge/Website-fuzzforge.ai-purple" alt="Website"/></a>
 </p>
 
 <p align="center">
@@ -26,19 +25,19 @@
 
 ---
 
-> 🚧 **FuzzForge AI is under active development.** Expect breaking changes and new features!
+> 🚧 **SecPipe AI is under active development.** Expect breaking changes and new features!
 
 ---
 
 ## 🚀 Overview
 
-**FuzzForge AI** is an open-source MCP server that enables AI agents (GitHub Copilot, Claude, etc.) to orchestrate security research workflows through the **Model Context Protocol (MCP)**.
+**SecPipe AI** is an open-source MCP server that enables AI agents (GitHub Copilot, Claude, etc.) to orchestrate security research workflows through the **Model Context Protocol (MCP)**.
 
-FuzzForge connects your AI assistant to **MCP tool hubs** — collections of containerized security tools that the agent can discover, chain, and execute autonomously. Instead of manually running security tools, describe what you want and let your AI assistant handle it.
+SecPipe connects your AI assistant to **MCP tool hubs** — collections of containerized security tools that the agent can discover, chain, and execute autonomously. Instead of manually running security tools, describe what you want and let your AI assistant handle it.
 
 ### The Core: Hub Architecture
 
-FuzzForge acts as a **meta-MCP server** — a single MCP endpoint that gives your AI agent access to tools from multiple MCP hub servers. Each hub server is a containerized security tool (Binwalk, YARA, Radare2, Nmap, etc.) that the agent can discover at runtime.
+SecPipe acts as a **meta-MCP server** — a single MCP endpoint that gives your AI agent access to tools from multiple MCP hub servers. Each hub server is a containerized security tool (Binwalk, YARA, Radare2, Nmap, etc.) that the agent can discover at runtime.
 
 - **🔍 Discovery**: The agent lists available hub servers and discovers their tools
 - **🤖 AI-Native**: Hub tools provide agent context — usage tips, workflow guidance, and domain knowledge
@@ -75,7 +74,7 @@ Agent → Crash Analysis:  Deduplicate and triage discovered crashes
 
 ## ⭐ Support the Project
 
-If you find FuzzForge useful, please **star the repo** to support development! 🚀
+If you find SecPipe useful, please **star the repo** to support development! 🚀
 
 <a href="https://github.com/FuzzingLabs/fuzzforge_ai/stargazers">
   <img src="https://img.shields.io/github/stars/FuzzingLabs/fuzzforge_ai?style=social" alt="GitHub Stars">
@@ -106,7 +105,7 @@ If you find FuzzForge useful, please **star the repo** to support development! �
                             │ MCP Protocol (stdio)
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     FuzzForge MCP Server                        │
+│                     SecPipe MCP Server                           │
 │                                                                 │
 │  Projects          Hub Discovery         Hub Execution          │
 │  ┌──────────────┐  ┌──────────────────┐  ┌───────────────────┐  │
@@ -135,7 +134,7 @@ If you find FuzzForge useful, please **star the repo** to support development! �
 
 ## 🔧 MCP Security Hub
 
-FuzzForge ships with built-in support for the **[MCP Security Hub](https://github.com/FuzzingLabs/mcp-security-hub)** — a collection of 36 production-ready, Dockerized MCP servers covering offensive security:
+SecPipe ships with built-in support for the **[MCP Security Hub](https://github.com/FuzzingLabs/mcp-security-hub)** — a collection of 36 production-ready, Dockerized MCP servers covering offensive security:
 
 | Category | Servers | Examples |
 |----------|---------|----------|
@@ -205,7 +204,7 @@ uv run fuzzforge mcp install claude-desktop
 uv run fuzzforge mcp status
 ```
 
-**Restart your editor** and your AI agent will have access to FuzzForge tools!
+**Restart your editor** and your AI agent will have access to SecPipe tools!
 
 ---
 
@@ -220,7 +219,7 @@ Once installed, just talk to your AI agent:
 "Run nuclei against https://example.com"
 ```
 
-The agent will use FuzzForge to discover the right hub tools, chain them into a pipeline, and return results — all without you touching a terminal.
+The agent will use SecPipe to discover the right hub tools, chain them into a pipeline, and return results — all without you touching a terminal.
 
 See the [Usage Guide](USAGE.md) for detailed setup and advanced workflows.
 
@@ -230,7 +229,7 @@ See the [Usage Guide](USAGE.md) for detailed setup and advanced workflows.
 
 ```
 fuzzforge_ai/
-├── fuzzforge-mcp/           # MCP server — the core of FuzzForge
+├── fuzzforge-mcp/           # MCP server — the core of SecPipe
 ├── fuzzforge-cli/           # Command-line interface & terminal UI
 ├── fuzzforge-common/        # Shared abstractions (containers, storage)
 ├── fuzzforge-runner/        # Container execution engine (Docker/Podman)

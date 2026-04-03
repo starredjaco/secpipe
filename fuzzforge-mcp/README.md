@@ -1,10 +1,10 @@
-# FuzzForge MCP
+# SecPipe MCP
 
-Model Context Protocol (MCP) server that enables AI agents to orchestrate FuzzForge security research modules.
+Model Context Protocol (MCP) server that enables AI agents to orchestrate SecPipe security research modules.
 
 ## Overview
 
-FuzzForge MCP provides a standardized interface for AI agents (Claude Code, GitHub Copilot, Claude Desktop) to:
+SecPipe MCP provides a standardized interface for AI agents (Claude Code, GitHub Copilot, Claude Desktop) to:
 
 - List and discover available security modules
 - Execute modules in isolated containers
@@ -17,7 +17,7 @@ The server communicates with AI agents using the [Model Context Protocol](https:
 
 ### Automatic Installation (Recommended)
 
-Use the FuzzForge CLI to automatically configure MCP for your AI agent:
+Use the SecPipe CLI to automatically configure MCP for your AI agent:
 
 ```bash
 # For GitHub Copilot
@@ -110,7 +110,7 @@ The MCP server exposes the following tools to AI agents:
 
 ### Project Management
 
-- **`init_project`** - Initialize a new FuzzForge project
+- **`init_project`** - Initialize a new SecPipe project
 - **`set_project_assets`** - Set initial assets (source code, contracts, etc.) for the project
 
 ### Module Management
@@ -135,7 +135,7 @@ The server also provides resources for accessing:
 
 ### From AI Agent (e.g., Claude Code)
 
-Once configured, AI agents can interact with FuzzForge naturally:
+Once configured, AI agents can interact with SecPipe naturally:
 
 ```text
 User: List the available security modules
@@ -178,14 +178,14 @@ uv run uvicorn fuzzforge_mcp.application:app --reload
                   │ stdio/JSON-RPC
                   ▼
 ┌─────────────────────────────────────────┐
-│       FuzzForge MCP Server              │
+│       SecPipe MCP Server                │
 │  Tools: init_project, list_modules,     │
 │         execute_module, execute_workflow│
 └─────────────────────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────┐
-│       FuzzForge Runner                  │
+│       SecPipe Runner                    │
 │    Podman/Docker Orchestration          │
 └─────────────────────────────────────────┘
                   │
@@ -212,6 +212,6 @@ uv run pytest
 
 ## See Also
 
-- [FuzzForge Main README](../README.md) - Overall project documentation
+- [SecPipe Main README](../README.md) - Overall project documentation
 - [Module SDK](../fuzzforge-modules/fuzzforge-modules-sdk/README.md) - Creating custom modules
 - [Model Context Protocol](https://modelcontextprotocol.io/) - MCP specification

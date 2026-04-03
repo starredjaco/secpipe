@@ -1,8 +1,8 @@
-# Contributing to FuzzForge AI
+# Contributing to SecPipe AI
 
-Thank you for your interest in contributing to FuzzForge AI! We welcome contributions from the community and are excited to collaborate with you.
+Thank you for your interest in contributing to SecPipe AI! We welcome contributions from the community and are excited to collaborate with you.
 
-**Our Vision**: FuzzForge aims to be a **universal platform for security research** across all cybersecurity domains. Through our modular architecture, any security tool—from fuzzing engines to cloud scanners, from mobile app analyzers to IoT security tools—can be integrated as a containerized module and controlled via AI agents.
+**Our Vision**: SecPipe aims to be a **universal platform for security research** across all cybersecurity domains. Through our modular architecture, any security tool—from fuzzing engines to cloud scanners, from mobile app analyzers to IoT security tools—can be integrated as a containerized module and controlled via AI agents.
 
 ## Ways to Contribute
 
@@ -13,7 +13,7 @@ Thank you for your interest in contributing to FuzzForge AI! We welcome contribu
 - **Documentation** - Improve guides, tutorials, and module documentation
 - **Testing** - Help test new features and report issues
 - **AI Integration** - Improve MCP tools and AI agent interactions
-- **Tool Integrations** - Wrap existing security tools as FuzzForge modules
+- **Tool Integrations** - Wrap existing security tools as SecPipe modules
 
 ## Contribution Guidelines
 
@@ -88,7 +88,7 @@ test(runner): add container execution tests
 
 ## Module Development
 
-FuzzForge uses a modular architecture where security tools run as isolated containers. The `fuzzforge-modules-sdk` provides everything you need to create new modules.
+SecPipe uses a modular architecture where security tools run as isolated containers. The `fuzzforge-modules-sdk` provides everything you need to create new modules.
 
 **Documentation:**
 - [Module SDK Documentation](fuzzforge-modules/fuzzforge-modules-sdk/README.md) - Complete SDK reference
@@ -211,7 +211,7 @@ FuzzForge uses a modular architecture where security tools run as isolated conta
 
 ### Module Types
 
-FuzzForge is designed to support modules across **all cybersecurity domains**. The modular architecture allows any security tool to be containerized and integrated. Here are the main categories:
+SecPipe is designed to support modules across **all cybersecurity domains**. The modular architecture allows any security tool to be containerized and integrated. Here are the main categories:
 
 **Application Security**
 - Fuzzing engines (coverage-guided, grammar-based, mutation-based)
@@ -341,7 +341,7 @@ uv run pytest
 
 ## Contributing to Core Features
 
-Beyond modules, you can contribute to FuzzForge's core components.
+Beyond modules, you can contribute to SecPipe's core components.
 
 **Useful Resources:**
 - [Project Structure](README.md) - Overview of the codebase
@@ -399,7 +399,7 @@ Beyond modules, you can contribute to FuzzForge's core components.
 When reporting bugs, please include:
 
 - **Environment**: OS, Python version, Docker version, uv version
-- **FuzzForge Version**: Output of `uv run fuzzforge --version`
+- **SecPipe Version**: Output of `uv run fuzzforge --version`
 - **Module**: Which module or component is affected
 - **Steps to Reproduce**: Clear steps to recreate the issue
 - **Expected Behavior**: What should happen
@@ -538,7 +538,7 @@ Before submitting a new module:
 
 ## License
 
-By contributing to FuzzForge AI, you agree that your contributions will be licensed under the same license as the project (see [LICENSE](LICENSE)).
+By contributing to SecPipe AI, you agree that your contributions will be licensed under the same license as the project (see [LICENSE](LICENSE)).
 
 For module contributions:
 - Modules you create remain under the project license
@@ -558,6 +558,6 @@ Need help contributing?
 
 ---
 
-**Thank you for making FuzzForge better!**
+**Thank you for making SecPipe better!**
 
-Every contribution, no matter how small, helps build a stronger security research platform. Whether you're creating a module for web security, cloud scanning, mobile analysis, or any other cybersecurity domain, your work makes FuzzForge more powerful and versatile for the entire security community!
+Every contribution, no matter how small, helps build a stronger security research platform. Whether you're creating a module for web security, cloud scanning, mobile analysis, or any other cybersecurity domain, your work makes SecPipe more powerful and versatile for the entire security community!
