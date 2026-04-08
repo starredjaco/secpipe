@@ -479,6 +479,82 @@ class LocalStorage:
         return None
 
     # ------------------------------------------------------------------
+    # Reports
+    # ------------------------------------------------------------------
+
+    def list_execution_metadata(self, project_path: Path) -> list[dict[str, Any]]:
+        """Load full execution metadata for all runs, sorted oldest-first.
+
+        :param project_path: Path to the project directory.
+        :returns: List of full metadata dicts (includes arguments, result).
+
+        """
+        runs_dir = self._get_project_path(project_path) / "runs"
+        if not runs_dir.exists():
+            return []
+
+        metadata: list[dict[str, Any]] = []
+        for run_dir in sorted(runs_dir.iterdir()):
+            if not run_dir.is_dir():
+                continue
+            meta_path = run_dir / "metadata.json"
+            if meta_path.exists():
+                try:
+                    metadata.append(json.loads(meta_path.read_text()))
+                except (json.JSONDecodeError, OSError):
+                    continue
+        return metadata
+
+    def save_report(
+        self,
+        project_path: Path,
+        content: str,
+        fmt: str = "markdown",
+    ) -> Path:
+        """Save a generated report to .fuzzforge/reports/.
+
+        :param project_path: Path to the project directory.
+        :param content: Report content string.
+        :param fmt: Format name used to choose file extension.
+        :returns: Path to the saved report file.
+
+        """
+        reports_dir = self._get_project_path(project_path) / "reports"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+
+        ext_map = {"markdown": "md", "json": "json", "sarif": "sarif"}
+        ext = ext_map.get(fmt, "md")
+        filename = f"{datetime.now(tz=UTC).strftime('%Y%m%dT%H%M%SZ')}_report.{ext}"
+        report_path = reports_dir / filename
+        report_path.write_text(content)
+
+        logger.info("Saved report: %s", report_path)
+        return report_path
+
+    def list_reports(self, project_path: Path) -> list[dict[str, Any]]:
+        """List generated reports for a project, newest first.
+
+        :param project_path: Path to the project directory.
+        :returns: List of report dicts with filename, host_path, size, created_at.
+
+        """
+        reports_dir = self._get_project_path(project_path) / "reports"
+        if not reports_dir.exists():
+            return []
+
+        reports: list[dict[str, Any]] = []
+        for report_path in sorted(reports_dir.iterdir(), reverse=True):
+            if report_path.is_file():
+                stat = report_path.stat()
+                reports.append({
+                    "filename": report_path.name,
+                    "host_path": str(report_path),
+                    "size": stat.st_size,
+                    "created_at": datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat(),
+                })
+        return reports
+
+    # ------------------------------------------------------------------
     # Skill packs
     # ------------------------------------------------------------------
 
